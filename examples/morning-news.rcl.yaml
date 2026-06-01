@@ -1,0 +1,39 @@
+routine: morning-news
+schedule: every weekday at 07:30 Asia/Seoul
+owner_intent: "Summarize major AI and semiconductor news for the user."
+
+agent:
+  model: default
+  tools:
+    - web
+  budget:
+    max_minutes: 8
+    max_tokens: 12000
+
+output_contract:
+  format: markdown
+  language: ko
+  sections:
+    - title: "Top 5"
+      required: true
+    - title: "Why it matters"
+      required: true
+    - title: "Sources"
+      required: true
+  citations:
+    min_count: 5
+
+status_policy:
+  green_if:
+    - schedule.completed
+    - runtime.completed
+    - output.schema_valid
+    - citations.count >= 5
+  yellow_if:
+    - output.partial
+    - citations.count < 5
+    - judge.confidence < 0.75
+  red_if:
+    - runtime.failed
+    - auth.failed
+    - timeout.exceeded
