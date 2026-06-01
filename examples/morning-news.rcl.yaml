@@ -1,5 +1,10 @@
 routine: morning-news
-schedule: every weekday at 07:30 Asia/Seoul
+schedule: weekdays around 07:30 Asia/Seoul
+rhythm:
+  preferred_window: "07:00-08:30"
+  grace_period: 45m
+  skip_policy: allow_owner_pause
+  pattern_goal: "4 successful weekday runs per week"
 owner_intent: "Summarize major AI and semiconductor news for the user."
 
 agent:

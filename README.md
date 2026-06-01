@@ -1,6 +1,6 @@
 # MyCron
 
-> My Routine-inspired control dashboard for Hermes Agent cron routines.
+> Flexible routine-pattern control dashboard for Hermes Agent cron routines.
 
 **MyCron** is an early product/design repository for a Hermes Agent dashboard that turns scheduled agent work into a visible, inspectable, and controllable routine board.
 
@@ -8,9 +8,9 @@ The name intentionally braids three ideas:
 
 - **My**: the user's personal control room
 - **Cron**: scheduled autonomous work
-- **Routine UI**: a MyRoutine-style traffic-light / checklist board
+- **Routine patterns**: flexible timing, check-ins, and traffic-light feedback for recurring agent work
 
-This repo starts from a product hypothesis, not an implementation claim: agentic cron jobs need more than a Unix schedule. They need observable state, validation, prompt/version history, and owner control.
+This repo starts from a product hypothesis, not an implementation claim: agentic cron jobs need more than a Unix schedule. They need approximate routine windows, flexible recurrence patterns, observable state, validation, prompt/version history, and owner control.
 
 > Naming note: "MyCron" is a working name. Because it sounds like "Micron", this repo should keep trademark/brand-confusion review open before any commercial use.
 
@@ -18,15 +18,13 @@ This repo starts from a product hypothesis, not an implementation claim: agentic
 
 ## Product thesis
 
-MyRoutine asks:
+Personal routines are rarely just streak counters. They often need approximate timing, adjustable cadence, soft windows, skipped days, recovery days, and pattern-level feedback.
 
-> Did I complete my habits today?
-
-MyCron asks:
+MyCron applies that idea to agent operations:
 
 > Did my Hermes Agent routines execute correctly, produce trustworthy output, and stay under owner control?
 
-A normal cron dashboard can say whether a job ran. MyCron should say whether an **agentic routine** remained useful, safe, and aligned.
+A normal cron dashboard can say whether a job ran. MyCron should say whether an **agentic routine** remained useful, safe, aligned, and consistent with the owner's intended rhythm.
 
 ---
 
@@ -127,7 +125,12 @@ Example sketch:
 
 ```yaml
 routine: morning-news
-schedule: every weekday at 07:30 Asia/Seoul
+schedule: weekdays around 07:30 Asia/Seoul
+rhythm:
+  preferred_window: "07:00-08:30"
+  grace_period: 45m
+  skip_policy: allow_owner_pause
+  pattern_goal: "4 successful weekday runs per week"
 owner_intent: "Summarize major AI and semiconductor news for Kiwon."
 
 agent:
@@ -189,7 +192,7 @@ Prompt/version store ─► MyCron dashboard
 ### Components
 
 - **Dashboard UI**
-  - Next.js + Tailwind recommended for a polished MyRoutine-like board.
+  - Next.js + Tailwind recommended for a polished routine-control board with flexible timing and pattern views.
   - Streamlit may be acceptable only for an ultra-fast internal prototype.
 
 - **API layer**

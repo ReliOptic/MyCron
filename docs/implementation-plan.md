@@ -2,7 +2,7 @@
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task.
 
-**Goal:** Build a local-first MyRoutine-style dashboard for Hermes Agent cron routines.
+**Goal:** Build a local-first flexible routine-control dashboard for Hermes Agent cron routines.
 
 **Architecture:** Start with a static fixture-driven Next.js UI, then connect it to a local API that reads Hermes cron metadata and run history. Keep validation and prompt/versioning as first-class concepts rather than UI afterthoughts.
 
@@ -12,9 +12,9 @@
 
 ## Phase 1 — Product contract before code
 
-### Task 1: Define status model
+### Task 1: Define status and routine rhythm model
 
-**Objective:** Make 🟢/🟡/🔴/⚪/⚫ semantics precise and testable.
+**Objective:** Make 🟢/🟡/🔴/⚪/⚫ semantics precise and testable while preserving flexible routine timing.
 
 **Files:**
 - Create: `docs/status-model.md`
@@ -24,8 +24,9 @@
 - Define allowed transitions.
 - Define why HTTP/tool success is insufficient for 🟢.
 - Define required evidence per status.
+- Define approximate windows, preferred time ranges, soft deadlines, skip policies, and pattern-level feedback.
 
-**Verification:** A developer can classify a sample run without guessing.
+**Verification:** A developer can classify a sample run without guessing, including cases where the run is acceptable inside a soft routine window rather than at an exact cron instant.
 
 ### Task 2: Define routine/run/version schema
 
@@ -36,6 +37,7 @@
 
 **Entities:**
 - `Routine`
+- `RoutineRhythm`
 - `RoutineVersion`
 - `PromptVersion`
 - `ValidatorVersion`
@@ -100,7 +102,7 @@ Expected: local dashboard opens.
 
 ### Task 6: Build weekly traffic-light board
 
-**Objective:** Show the MyRoutine-inspired table.
+**Objective:** Show the flexible routine traffic-light table.
 
 **Files:**
 - Modify: `apps/dashboard/src/app/page.tsx`
