@@ -32,7 +32,7 @@ Agent command
 → Runtime feedback/history
 ```
 
-The first demo should prove the loop with **two visually different Packs**, not only one alarm screen:
+The first demo should prove **real catalog-governed GenUI**, not only hand-written templates. The LLM should assemble a JSON UI spec from the selected Pack catalog, then the runtime validates it before rendering. The demo still uses two visually different Packs:
 
 1. `alarm.basic` — countdown / snooze / complete / history
 2. `daily-brief.basic` — digest cards / evidence / more-like-this / mute / history
@@ -123,13 +123,14 @@ Must implement:
 ```text
 1. Pack Schema v0.1
 2. alarm.basic Pack
-3. daily-brief.basic Pack with fixture data
+3. daily-brief.basic Pack with mock/source data
 4. CLI/API create command
-5. Cronlet persistence
-6. GenUI Spec generation
-7. PWA renderer
-8. Feedback event persistence
-9. History/state update
+5. Supabase persistence for Cronlets, UI Specs, and feedback events
+6. LLM-based GenUI Spec generation constrained by Pack catalog
+7. Zod validation + catalog/action validation + safe fallback
+8. PWA renderer
+9. Feedback event persistence
+10. History/state update
 ```
 
 Explicit non-goals:
@@ -149,12 +150,31 @@ Success criteria:
 ```text
 1. Two different intents create two different Cronlets.
 2. Pack Resolver selects different catalogs.
-3. Two different GenUI Specs are generated.
-4. PWA renders visually different utility surfaces.
-5. User actions write feedback events.
-6. Runtime state/history changes and is visible.
-7. Demo recording makes viewers say: “AI가 저 화면을 만들었네.”
+3. The LLM generates two different GenUI Specs from the selected catalogs.
+4. Zod/catalog validation rejects widgets or actions outside the Pack contract.
+5. PWA renders visually different utility surfaces.
+6. User actions write feedback events to Supabase.
+7. Runtime state/history changes and is visible.
+8. Demo recording makes viewers say: “AI가 저 화면을 만들었네.”
 ```
+
+---
+
+## Real GenUI path
+
+```text
+intent
+→ API
+→ LLM with Pack catalog context
+→ structured JSON GenUI Spec
+→ Zod validation
+→ catalog/action validation
+→ render
+→ feedback
+→ Supabase runtime state
+```
+
+See `docs/llm-genui.md` for the generation and validation contract.
 
 ---
 

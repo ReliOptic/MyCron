@@ -2,11 +2,11 @@
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task.
 
-**Goal:** Build a two-pack GenUI demo where agent-created scheduled intents become governed Utility Pack surfaces and user actions write runtime feedback.
+**Goal:** Build a real catalog-governed GenUI demo where an LLM assembles validated Utility Pack surfaces and user actions write runtime feedback.
 
-**Architecture:** Start with Pack Schema v0.1, two built-in Packs (`alarm.basic`, `daily-brief.basic`), fixture-backed runtime state, and a PWA renderer. Defer robust scheduling, push notifications, real connectors, auth, and marketplace.
+**Architecture:** Start with Pack Schema v0.1, two built-in Packs (`alarm.basic`, `daily-brief.basic`), Supabase runtime state, an LLM GenUI generator constrained by Pack catalogs, Zod/catalog validation, safe fallback specs, and a PWA renderer. Defer robust scheduling, push notifications, real connectors, auth, and marketplace.
 
-**Tech Stack:** TypeScript, Next.js PWA, Zod or JSON Schema, local JSON/SQLite demo store first, Node CLI.
+**Tech Stack:** TypeScript, Next.js PWA, Zod, Supabase Postgres, Node CLI, structured-output LLM API.
 
 ---
 
@@ -64,9 +64,9 @@
 
 ---
 
-## Phase 2 — Runtime and CLI
+## Phase 2 — Supabase runtime and CLI
 
-### Task 4: Bootstrap package structure
+### Task 4: Bootstrap package structure and Supabase client
 
 **Objective:** Create a minimal monorepo shape.
 
@@ -77,8 +77,9 @@
 - Create: `packages/runtime/`
 - Create: `apps/web/`
 - Create: `apps/cli/`
+- Create: `packages/runtime/src/supabase.ts`
 
-**Verification:** `pnpm install` and `pnpm -r typecheck` run locally.
+**Verification:** `pnpm install` and `pnpm -r typecheck` run locally; Supabase env vars are documented but not committed.
 
 ### Task 5: Implement Pack Resolver
 
@@ -107,6 +108,7 @@
 - Create first `job_id`
 - Store schedule config
 - Store creator metadata
+- Persist to Supabase tables for `cronlets`, `jobs`, `ui_specs`, and `feedback_events`
 
 **Verification:** Creating an alarm and daily brief produces two different Cronlet records.
 
@@ -131,51 +133,54 @@ mycron create --pack daily-brief.basic --topic "Polymarket 재미있는 주제" 
 
 ---
 
-## Phase 3 — GenUI Spec generation
+## Phase 3 — Real catalog-governed GenUI Spec generation
 
-### Task 8: Define GenUI Spec format
+### Task 8: Define GenUI Spec format and validator
 
 **Objective:** Use a flat `root` + `elements` map compatible with catalog-governed rendering.
 
 **Files:**
 - Create: `docs/genui-spec.md`
 - Create: `packages/schema/src/ui-spec.ts`
+- Create: `packages/runtime/src/validate-ui-spec.ts`
 
-**Verification:** Spec validator rejects widgets not listed in the selected Pack.
+**Verification:** Spec validator rejects widgets/actions not listed in the selected Pack and rejects invalid element graphs.
 
-### Task 9: Generate AlarmKit UI Spec
+### Task 9: Implement LLM GenUI generator
 
-**Objective:** Render alarm Cronlets as countdown utility surfaces.
-
-**Files:**
-- Create: `packages/runtime/src/specs/alarm.ts`
-
-**Widgets:**
-- `AlarmHeader`
-- `Countdown`
-- `ActionRow`
-- `SnoozeButton`
-- `CompleteButton`
-- `ExecutionHistory`
-
-**Verification:** Spec includes only `alarm.basic.allowed_widgets`.
-
-### Task 10: Generate DailyBriefKit UI Spec
-
-**Objective:** Render daily brief Cronlets as digest surfaces using fixture topics.
+**Objective:** Ask the LLM to assemble a GenUI Spec using only the selected Pack catalog.
 
 **Files:**
-- Create: `packages/runtime/src/specs/daily-brief.ts`
-- Create: `packages/runtime/src/fixtures/daily-brief.ts`
+- Create: `packages/runtime/src/llm/genui-generator.ts`
+- Create: `packages/runtime/src/llm/prompts.ts`
+- Create: `packages/runtime/src/llm/types.ts`
 
-**Widgets:**
-- `DigestHeader`
-- `TopicCard`
-- `EvidenceDrawer`
-- `FeedbackButtons`
-- `ExecutionHistory`
+**Behavior:**
+- Input: intent, selected Pack, Cronlet state, optional source data
+- Output: structured JSON GenUI Spec
+- No HTML/CSS/JS/React generation
+- Include validation error feedback for one regenerate attempt
 
-**Verification:** Spec visually differs from AlarmKit and includes fixture topics.
+**Verification:** Mock LLM tests prove the generator passes Pack catalog into the prompt and returns parseable structured output.
+
+### Task 10: Add validated generation pipeline and fallbacks
+
+**Objective:** Make LLM variance safe enough for a live demo.
+
+**Files:**
+- Create: `packages/runtime/src/specs/generate-validated-spec.ts`
+- Create: `packages/runtime/src/specs/fallbacks/alarm.ts`
+- Create: `packages/runtime/src/specs/fallbacks/daily-brief.ts`
+- Create: `packages/runtime/src/source-data/daily-brief-mock.ts`
+
+**Behavior:**
+- Generate with LLM
+- Validate with Zod + catalog/action checks
+- Regenerate once on validation failure
+- Persist validation result
+- Fall back to deterministic safe spec if still invalid
+
+**Verification:** Tests cover valid spec, invalid widget, invalid action, regenerate success, and fallback after repeated failure.
 
 ---
 
@@ -224,7 +229,7 @@ mycron create --pack daily-brief.basic --topic "Polymarket 재미있는 주제" 
 
 ---
 
-## Phase 5 — Runtime feedback loop
+## Phase 5 — Runtime feedback loop with Supabase
 
 ### Task 15: Implement feedback API
 
@@ -266,7 +271,9 @@ mycron create --pack daily-brief.basic --topic "Polymarket 재미있는 주제" 
 2. Open alarm surface, click Snooze/Complete
 3. Run `mycron create --pack daily-brief.basic ...`
 4. Open digest surface, click More/Less/Mute
-5. Show feedback history
+5. Show the stored LLM-generated specs
+6. Show invalid-widget rejection test or log
+7. Show feedback history from Supabase
 
 **Success reaction:** “AI가 저 화면을 만들었네.”
 

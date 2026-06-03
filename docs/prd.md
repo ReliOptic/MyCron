@@ -45,10 +45,11 @@ MVP가 증명해야 할 것은 다음이다.
 
 > **에이전트가 만든 시간 기반 명령이 Utility Pack으로 변환되고, 사용자의 UI 액션이 다시 런타임 상태로 돌아온다.**
 
-단, `alarm.basic` 하나만으로는 GenUI의 “다른 intent → 다른 화면”이 보이지 않는다. 따라서 데모 MVP는 최소 두 개의 시각적으로 다른 Pack을 구현한다.
+단, `alarm.basic` 하나만으로는 GenUI의 “다른 intent → 다른 화면”이 보이지 않는다. 또한 hand-written template만으로는 “AI가 surface를 조립한다”는 whoa가 약하다. 따라서 데모 MVP는 최소 두 개의 시각적으로 다른 Pack과 실제 catalog-governed LLM spec generation을 구현한다.
 
 ```text
 alarm.basic + daily-brief.basic
++ LLM-generated validated GenUI Specs
 ```
 
 ---
@@ -227,7 +228,7 @@ mycron create \
   --lang ko
 ```
 
-MVP에서는 실제 Polymarket API를 붙이지 않는다. Fixture data로 충분하다. 핵심은 GenUI loop 증명이다.
+MVP에서는 실제 Polymarket API를 붙이지 않는다. 간단한 mock/source data로 충분하다. 핵심은 LLM이 Pack catalog 안에서 GenUI Spec을 조립하고, runtime이 이를 검증한 뒤 렌더링하는 것이다.
 
 PWA surface:
 
@@ -261,13 +262,14 @@ digest.less_like_this
 ```text
 1. Pack Schema v0.1
 2. alarm.basic Pack
-3. daily-brief.basic Pack with fixture data
+3. daily-brief.basic Pack with mock/source data
 4. CLI/API create command
-5. Cronlet persistence
-6. GenUI Spec generation
-7. PWA renderer
-8. Feedback event persistence
-9. History/state update
+5. Supabase persistence
+6. LLM-based GenUI Spec generation constrained by Pack catalog
+7. Zod validation + catalog/action validation + safe fallback
+8. PWA renderer
+9. Feedback event persistence
+10. History/state update
 ```
 
 ### 구현하지 않음
@@ -287,11 +289,12 @@ public sharing
 ```text
 1. Two different intents create two different Cronlets.
 2. Pack Resolver selects different catalogs.
-3. Two different GenUI Specs are generated.
-4. PWA renders visually different utility surfaces.
-5. User actions write feedback events.
-6. Runtime state/history changes and is visible.
-7. Demo recording makes viewers say: “AI가 저 화면을 만들었네.”
+3. The LLM generates two different GenUI Specs from the selected catalogs.
+4. Zod/catalog validation rejects widgets or actions outside the Pack contract.
+5. PWA renders visually different utility surfaces.
+6. User actions write feedback events to Supabase.
+7. Runtime state/history changes and is visible.
+8. Demo recording makes viewers say: “AI가 저 화면을 만들었네.”
 ```
 
 ---
@@ -362,6 +365,40 @@ public sharing
 
 ---
 
+## 8.5 Real GenUI generation contract
+
+MVP의 whoa는 template rendering이 아니라 실제 LLM 기반 surface 조립에서 나온다.
+
+```text
+intent
+→ API
+→ LLM with Pack catalog context
+→ structured JSON GenUI Spec
+→ Zod validation
+→ catalog/action validation
+→ optional regenerate-on-fail
+→ safe fallback if still invalid
+→ render
+→ feedback
+→ Supabase runtime state
+```
+
+Validation gates:
+
+```text
+1. JSON parse
+2. GenUI Spec Zod schema
+3. element.type ∈ allowed_widgets 또는 base layout catalog
+4. emitted action ∈ allowed_actions
+5. widget prop schema 통과
+6. root/children graph valid
+7. invalid 시 1회 regenerate, 실패 시 deterministic fallback spec
+```
+
+LLM은 HTML/CSS/JS/React component를 생성하지 않는다. LLM은 catalog 안의 JSON UI tree만 생성한다.
+
+---
+
 ## 9. 데이터 모델
 
 ```text
@@ -382,10 +419,11 @@ MVP는 단순 구현을 위해 `jobs`와 `executions`를 합쳐도 된다. 단, 
 ```text
 Frontend: React / Next.js PWA
 Backend: Node.js / TypeScript
-DB: Supabase Postgres or local SQLite for demo
+DB: Supabase Postgres
 CLI: Node CLI package
-Schema validation: Zod or JSON Schema
+Schema validation: Zod first; JSON Schema later if needed
 Auth: post-MVP
+LLM: structured output API for catalog-governed GenUI Spec generation
 Notification: post-MVP
 ```
 
@@ -393,10 +431,10 @@ Notification: post-MVP
 
 ## 11. 로드맵
 
-### Phase 1 — Two-Pack GenUI Demo
+### Phase 1 — Real Catalog-Governed GenUI Demo
 
 ```text
-Pack Schema → Cronlet → GenUI Spec → PWA Render → Feedback Event
+Pack Schema → Cronlet → LLM-generated validated GenUI Spec → PWA Render → Feedback Event
 ```
 
 ### Phase 2 — Real scheduling + notifications
@@ -434,4 +472,4 @@ MyCron은 AI 에이전트가 만든 시간 기반 의도를 **Utility Pack**으�
 
 첫 번째 목표는 크지 않다.
 
-> **alarm.basic + daily-brief.basic 두 Pack으로 Pack Schema → Cronlet → GenUI Spec → PWA Render → Feedback Event 루프를 닫는다.**
+> **alarm.basic + daily-brief.basic 두 Pack으로 Pack Schema → Cronlet → LLM-generated validated GenUI Spec → PWA Render → Feedback Event 루프를 닫는다.**

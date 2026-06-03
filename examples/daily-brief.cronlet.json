@@ -8,7 +8,7 @@
     "rule": "daily 08:30 Asia/Seoul"
   },
   "source_config": {
-    "source": "fixture",
+    "source": "mock",
     "topic": "Polymarket 재미있는 주제",
     "language": "ko"
   },
