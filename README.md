@@ -176,6 +176,8 @@ intent
 
 See `docs/llm-genui.md` for the generation and validation contract.
 
+CLI design note: `mycron` is a full CRUD client for the user's Cronlet store, not a push-only write port. See `docs/agent-action-cli.md`.
+
 ---
 
 ## Example commands
