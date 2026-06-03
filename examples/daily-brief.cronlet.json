@@ -1,0 +1,20 @@
+{
+  "cronlet_id": "crn_daily_brief_demo",
+  "pack_id": "daily-brief.basic",
+  "title": "Polymarket Daily Brief",
+  "status": "active",
+  "schedule": {
+    "type": "recurring",
+    "rule": "daily 08:30 Asia/Seoul"
+  },
+  "source_config": {
+    "source": "fixture",
+    "topic": "Polymarket 재미있는 주제",
+    "language": "ko"
+  },
+  "created_by": {
+    "type": "agent",
+    "name": "Hermes"
+  },
+  "feedback_history": []
+}

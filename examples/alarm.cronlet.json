@@ -1,0 +1,17 @@
+{
+  "cronlet_id": "crn_alarm_demo",
+  "pack_id": "alarm.basic",
+  "title": "세탁기 확인",
+  "status": "active",
+  "schedule": {
+    "type": "relative",
+    "after_minutes": 15,
+    "run_at": "2026-06-03T21:15:00+09:00"
+  },
+  "channels": ["pwa"],
+  "created_by": {
+    "type": "agent",
+    "name": "Hermes"
+  },
+  "feedback_history": []
+}
