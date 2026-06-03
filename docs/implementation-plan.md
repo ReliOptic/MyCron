@@ -2,204 +2,282 @@
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task.
 
-**Goal:** Build a local-first flexible routine-control dashboard for Hermes Agent cron routines.
+**Goal:** Build a two-pack GenUI demo where agent-created scheduled intents become governed Utility Pack surfaces and user actions write runtime feedback.
 
-**Architecture:** Start with a static fixture-driven Next.js UI, then connect it to a local API that reads Hermes cron metadata and run history. Keep validation and prompt/versioning as first-class concepts rather than UI afterthoughts.
+**Architecture:** Start with Pack Schema v0.1, two built-in Packs (`alarm.basic`, `daily-brief.basic`), fixture-backed runtime state, and a PWA renderer. Defer robust scheduling, push notifications, real connectors, auth, and marketplace.
 
-**Tech Stack:** Next.js, TypeScript, Tailwind CSS, SQLite, optional FastAPI bridge for Hermes-local integration.
+**Tech Stack:** TypeScript, Next.js PWA, Zod or JSON Schema, local JSON/SQLite demo store first, Node CLI.
 
 ---
 
-## Phase 1 — Product contract before code
+## Phase 1 — Product contract and schemas
 
-### Task 1: Define status and routine rhythm model
+### Task 1: Define Pack Schema v0.1
 
-**Objective:** Make 🟢/🟡/🔴/⚪/⚫ semantics precise and testable while preserving flexible routine timing.
+**Objective:** Define the contract for Utility Packs before building UI.
 
 **Files:**
-- Create: `docs/status-model.md`
+- Create: `docs/pack-schema.md`
+- Create: `packages/schema/src/pack.ts`
 
-**Content requirements:**
-- Define each status.
-- Define allowed transitions.
-- Define why HTTP/tool success is insufficient for 🟢.
-- Define required evidence per status.
-- Define approximate windows, preferred time ranges, soft deadlines, skip policies, and pattern-level feedback.
+**Requirements:**
+- `pack_id`, `version`, `category`, `job_type`
+- `job_schema`
+- `allowed_widgets`
+- `allowed_actions`
+- `blocked_actions`
+- `required_permissions`
+- `feedback_events`
+- `marketplace` metadata
 
-**Verification:** A developer can classify a sample run without guessing, including cases where the run is acceptable inside a soft routine window rather than at an exact cron instant.
+**Verification:** A developer can validate both `alarm.basic` and `daily-brief.basic` without guessing.
 
-### Task 2: Define routine/run/version schema
+### Task 2: Add built-in Pack definitions
 
-**Objective:** Define the data model before choosing storage.
+**Objective:** Create two visually distinct Packs for the demo.
+
+**Files:**
+- Create: `packs/alarm.basic.json`
+- Create: `packs/daily-brief.basic.json`
+
+**Verification:** Both Pack JSON files validate against Pack Schema v0.1.
+
+### Task 3: Define runtime data model
+
+**Objective:** Model the closed loop: Cronlet → Job/Execution → UI Spec → Feedback Event.
 
 **Files:**
 - Create: `docs/data-model.md`
+- Create: `packages/schema/src/runtime.ts`
 
 **Entities:**
-- `Routine`
-- `RoutineRhythm`
-- `RoutineVersion`
-- `PromptVersion`
-- `ValidatorVersion`
-- `Run`
-- `RunValidationResult`
-- `RunArtifact`
+- `UtilityPack`
+- `Cronlet`
+- `Job`
+- `Execution`
+- `UiSpec`
+- `FeedbackEvent`
 
-**Verification:** Every dashboard cell can be traced to one run and one version lineage.
-
-### Task 3: Draft Routine Contract Language
-
-**Objective:** Create a small language for scheduled agent contracts.
-
-**Files:**
-- Create: `docs/rcl.md`
-- Create: `examples/morning-news.rcl.yaml`
-- Create: `examples/blog-draft.rcl.yaml`
-
-**Verification:** Each example explains schedule, owner intent, tool policy, output contract, and status policy.
+**Verification:** Both demo flows can be represented:
+- one-time alarm
+- daily brief with fixture topics
 
 ---
 
-## Phase 2 — Static dashboard prototype
+## Phase 2 — Runtime and CLI
 
-### Task 4: Bootstrap Next.js app
+### Task 4: Bootstrap package structure
 
-**Objective:** Create a dashboard shell.
+**Objective:** Create a minimal monorepo shape.
 
 **Files:**
-- Create: `apps/dashboard/`
+- Create: `package.json`
+- Create: `pnpm-workspace.yaml`
+- Create: `packages/schema/`
+- Create: `packages/runtime/`
+- Create: `apps/web/`
+- Create: `apps/cli/`
 
-**Command:**
+**Verification:** `pnpm install` and `pnpm -r typecheck` run locally.
+
+### Task 5: Implement Pack Resolver
+
+**Objective:** Select a Pack by explicit `--pack` first; natural-language inference is post-MVP.
+
+**Files:**
+- Create: `packages/runtime/src/pack-resolver.ts`
+
+**Behavior:**
+- `alarm.basic` returns AlarmKit catalog
+- `daily-brief.basic` returns DailyBriefKit catalog
+- unknown pack returns validation error
+
+**Verification:** Unit tests cover known/unknown pack IDs.
+
+### Task 6: Implement Cronlet creation
+
+**Objective:** Convert CLI/API input into persisted Cronlet state.
+
+**Files:**
+- Create: `packages/runtime/src/create-cronlet.ts`
+- Create: `packages/runtime/src/store.ts`
+
+**Behavior:**
+- Create `cronlet_id`
+- Create first `job_id`
+- Store schedule config
+- Store creator metadata
+
+**Verification:** Creating an alarm and daily brief produces two different Cronlet records.
+
+### Task 7: Implement CLI create command
+
+**Objective:** Let an agent create demo Cronlets from the shell.
+
+**Files:**
+- Create: `apps/cli/src/index.ts`
+
+**Commands:**
 
 ```bash
-pnpm create next-app apps/dashboard --ts --tailwind --eslint --app --src-dir
+mycron create --pack alarm.basic --after 15m "세탁기 확인"
 ```
-
-**Verification:**
 
 ```bash
-cd apps/dashboard
-pnpm dev
+mycron create --pack daily-brief.basic --topic "Polymarket 재미있는 주제" --schedule "daily 08:30" --lang ko
 ```
 
-Expected: local dashboard opens.
-
-### Task 5: Add fixture data
-
-**Objective:** Render realistic MyCron board without Hermes integration.
-
-**Files:**
-- Create: `apps/dashboard/src/fixtures/routines.ts`
-
-**Data:**
-- 3 routines
-- 7-day run grid
-- mixed green/yellow/red/pending states
-- prompt versions
-- validator results
-
-**Verification:** Fixture exports are typed and imported by the dashboard page.
-
-### Task 6: Build weekly traffic-light board
-
-**Objective:** Show the flexible routine traffic-light table.
-
-**Files:**
-- Modify: `apps/dashboard/src/app/page.tsx`
-- Create: `apps/dashboard/src/components/RoutineBoard.tsx`
-- Create: `apps/dashboard/src/components/StatusDot.tsx`
-
-**Verification:** Every routine displays seven day cells and controls.
-
-### Task 7: Add run detail drawer
-
-**Objective:** Make status colors explainable.
-
-**Files:**
-- Create: `apps/dashboard/src/components/RunDetailDrawer.tsx`
-
-**Content:**
-- run status
-- scheduler/runtime/schema/quality/judge gate results
-- logs
-- output preview
-- prompt version
-
-**Verification:** Clicking 🟡 or 🔴 reveals the reason.
+**Verification:** CLI returns JSON with `ok`, `cronlet_id`, `job_id`, `pack_id`, `surface_url`.
 
 ---
 
-## Phase 3 — Hermes integration
+## Phase 3 — GenUI Spec generation
 
-### Task 8: Define Hermes import adapter interface
+### Task 8: Define GenUI Spec format
 
-**Objective:** Avoid binding UI directly to Hermes internals.
-
-**Files:**
-- Create: `packages/hermes-adapter/src/types.ts`
-
-**Interface:**
-- `listRoutines()`
-- `getRoutine(id)`
-- `listRuns(routineId, range)`
-- `pauseRoutine(id)`
-- `resumeRoutine(id)`
-- `removeRoutine(id)`
-
-**Verification:** Dashboard can swap fixture adapter with Hermes adapter.
-
-### Task 9: Read Hermes cron job list
-
-**Objective:** Pull real job metadata into MyCron.
+**Objective:** Use a flat `root` + `elements` map compatible with catalog-governed rendering.
 
 **Files:**
-- Create: `packages/hermes-adapter/src/local-cron.ts`
+- Create: `docs/genui-spec.md`
+- Create: `packages/schema/src/ui-spec.ts`
 
-**Verification:** Existing Hermes cron jobs appear read-only in dashboard.
+**Verification:** Spec validator rejects widgets not listed in the selected Pack.
+
+### Task 9: Generate AlarmKit UI Spec
+
+**Objective:** Render alarm Cronlets as countdown utility surfaces.
+
+**Files:**
+- Create: `packages/runtime/src/specs/alarm.ts`
+
+**Widgets:**
+- `AlarmHeader`
+- `Countdown`
+- `ActionRow`
+- `SnoozeButton`
+- `CompleteButton`
+- `ExecutionHistory`
+
+**Verification:** Spec includes only `alarm.basic.allowed_widgets`.
+
+### Task 10: Generate DailyBriefKit UI Spec
+
+**Objective:** Render daily brief Cronlets as digest surfaces using fixture topics.
+
+**Files:**
+- Create: `packages/runtime/src/specs/daily-brief.ts`
+- Create: `packages/runtime/src/fixtures/daily-brief.ts`
+
+**Widgets:**
+- `DigestHeader`
+- `TopicCard`
+- `EvidenceDrawer`
+- `FeedbackButtons`
+- `ExecutionHistory`
+
+**Verification:** Spec visually differs from AlarmKit and includes fixture topics.
 
 ---
 
-## Phase 4 — Control plane and validation
+## Phase 4 — PWA Renderer
 
-### Task 10: Add prompt versioning
+### Task 11: Build minimal PWA shell
 
-**Objective:** Make prompt edits auditable.
-
-**Files:**
-- Create: `packages/core/src/versioning.ts`
-
-**Verification:** Editing a prompt creates a new version; historical runs keep old versions.
-
-### Task 11: Add validator pipeline
-
-**Objective:** Make green/yellow/red status trustworthy.
+**Objective:** Render Cronlet cards and detail pages.
 
 **Files:**
-- Create: `packages/core/src/validation.ts`
+- Create: `apps/web/`
+- Create: `apps/web/src/app/page.tsx`
+- Create: `apps/web/src/app/c/[cronletId]/page.tsx`
 
-**Gates:**
-- schedule
-- runtime
-- schema
-- quality
-- optional judge
+**Verification:** Home shows active Cronlets; detail page loads one Cronlet spec.
 
-**Verification:** Fixture runs classify into expected statuses.
+### Task 12: Implement widget registry
 
-### Task 12: Add routine creation from natural language
-
-**Objective:** Convert natural language to RCL draft with human review.
+**Objective:** Map allowed widget names to React components.
 
 **Files:**
-- Create: `apps/dashboard/src/components/NewRoutineDialog.tsx`
+- Create: `apps/web/src/renderer/WidgetRegistry.tsx`
+- Create: `apps/web/src/renderer/UtilityRenderer.tsx`
 
-**Verification:** User can enter “매일 오전 8시 AI 뉴스 요약” and receive editable RCL before saving.
+**Security rule:** Renderer never executes arbitrary code. Unknown widgets render as validation errors, not UI.
+
+**Verification:** Injecting an unknown widget into fixture spec is rejected.
+
+### Task 13: Implement Alarm widgets
+
+**Objective:** Make alarm UI visibly distinct and interactive.
+
+**Files:**
+- Create: `apps/web/src/widgets/alarm/*`
+
+**Verification:** Countdown, Snooze, Complete, History render.
+
+### Task 14: Implement DailyBrief widgets
+
+**Objective:** Make daily brief UI visibly distinct and interactive.
+
+**Files:**
+- Create: `apps/web/src/widgets/daily-brief/*`
+
+**Verification:** DigestHeader, TopicCard, EvidenceDrawer, More/Less/Mute render.
 
 ---
 
-## Non-goals for v0
+## Phase 5 — Runtime feedback loop
 
-- Multi-user hosted SaaS.
-- Direct billing/cost accounting beyond simple token/tool-budget fields.
-- Full Hermes internal rewrite.
-- Unreviewed autonomous prompt mutation.
+### Task 15: Implement feedback API
+
+**Objective:** Store user actions as feedback events.
+
+**Files:**
+- Create: `packages/runtime/src/feedback.ts`
+- Create: `apps/web/src/app/api/cronlets/[cronletId]/feedback/route.ts`
+
+**Behavior:**
+- Validate action against Pack allowed actions
+- Store feedback event
+- Update Cronlet/Job state when relevant
+
+**Verification:** Snooze updates alarm time; Complete changes status; More/Less/Mute update daily brief preferences/history.
+
+### Task 16: Show history/state updates
+
+**Objective:** Make closed loop visible in the demo.
+
+**Files:**
+- Modify: renderer history widgets
+
+**Verification:** Clicking actions immediately changes visible history/state.
+
+---
+
+## Phase 6 — Demo recording polish
+
+### Task 17: Add demo fixtures and script
+
+**Objective:** Make the demo recordable without external services.
+
+**Files:**
+- Create: `docs/demo-script.md`
+
+**Script:**
+1. Run `mycron create --pack alarm.basic --after 15m "세탁기 확인"`
+2. Open alarm surface, click Snooze/Complete
+3. Run `mycron create --pack daily-brief.basic ...`
+4. Open digest surface, click More/Less/Mute
+5. Show feedback history
+
+**Success reaction:** “AI가 저 화면을 만들었네.”
+
+---
+
+## Explicit non-goals for MVP
+
+- Real push notification
+- Robust production scheduler
+- Real Polymarket/GitHub/web integrations
+- Marketplace publish/install/fork
+- Flutter/native app
+- Multi-user auth and billing
+- Arbitrary UI/code execution from Packs

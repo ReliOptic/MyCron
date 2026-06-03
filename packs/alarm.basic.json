@@ -1,0 +1,50 @@
+{
+  "pack_id": "alarm.basic",
+  "name": "Basic Alarm Pack",
+  "version": "0.1.0",
+  "category": "AlarmKit",
+  "job_type": "alarm",
+  "description": "One-time or simple scheduled alarm-like reminders rendered as countdown utility surfaces.",
+  "job_schema": {
+    "title": "string",
+    "scheduled_at": "datetime | null",
+    "after": "duration | null",
+    "channels": ["pwa"]
+  },
+  "allowed_widgets": [
+    "AlarmHeader",
+    "BigTime",
+    "Countdown",
+    "ActionRow",
+    "SnoozeButton",
+    "CompleteButton",
+    "CancelButton",
+    "ExecutionHistory"
+  ],
+  "allowed_actions": [
+    {
+      "type": "snooze",
+      "payload_schema": { "minutes": "number" }
+    },
+    {
+      "type": "complete",
+      "payload_schema": {}
+    },
+    {
+      "type": "cancel",
+      "payload_schema": {}
+    }
+  ],
+  "blocked_actions": [],
+  "required_permissions": [],
+  "feedback_events": [
+    "alarm.snoozed",
+    "alarm.completed",
+    "alarm.cancelled"
+  ],
+  "marketplace": {
+    "visibility": "private",
+    "installable": false,
+    "forkable": false
+  }
+}

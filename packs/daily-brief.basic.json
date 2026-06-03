@@ -1,0 +1,57 @@
+{
+  "pack_id": "daily-brief.basic",
+  "name": "Daily Brief Basic Pack",
+  "version": "0.1.0",
+  "category": "DailyBriefKit",
+  "job_type": "scheduled_digest",
+  "description": "Fixture-backed scheduled digest surface for proving visually distinct GenUI utility rendering.",
+  "job_schema": {
+    "topic": "string",
+    "schedule": "string",
+    "language": "string",
+    "source": "string | null"
+  },
+  "allowed_widgets": [
+    "DigestHeader",
+    "TopicCard",
+    "EvidenceDrawer",
+    "FeedbackButtons",
+    "ScheduleControl",
+    "ExecutionHistory"
+  ],
+  "allowed_actions": [
+    {
+      "type": "save_topic",
+      "payload_schema": { "topic_id": "string" }
+    },
+    {
+      "type": "mute_topic",
+      "payload_schema": { "topic_id": "string" }
+    },
+    {
+      "type": "more_like_this",
+      "payload_schema": { "topic_id": "string" }
+    },
+    {
+      "type": "less_like_this",
+      "payload_schema": { "topic_id": "string" }
+    }
+  ],
+  "blocked_actions": [
+    "trade",
+    "place_bet",
+    "connect_wallet"
+  ],
+  "required_permissions": [],
+  "feedback_events": [
+    "digest.topic_saved",
+    "digest.topic_muted",
+    "digest.more_like_this",
+    "digest.less_like_this"
+  ],
+  "marketplace": {
+    "visibility": "private",
+    "installable": false,
+    "forkable": false
+  }
+}

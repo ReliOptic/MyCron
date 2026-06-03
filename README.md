@@ -1,261 +1,196 @@
 # MyCron
 
-> Flexible routine-pattern control dashboard for Hermes Agent cron routines.
+> MyCron turns agent-created scheduled intents into shareable Utility Packs, rendered through governed GenUI component catalogs.
 
-**MyCron** is an early product/design repository for a Hermes Agent dashboard that turns scheduled agent work into a visible, inspectable, and controllable routine board.
+**MyCron** is a renderer-agnostic GenUI utility runtime for scheduled AI intents. Agents such as Hermes, Codex, and Claude Code create time-based intents through CLI/MCP/API; MyCron stores them as **Cronlets**, renders them through approved **Utility Pack** catalogs, and records user feedback back into runtime state.
 
-The name intentionally braids three ideas:
+User-facing sentence:
 
-- **My**: the user's personal control room
-- **Cron**: scheduled autonomous work
-- **Routine patterns**: flexible timing, check-ins, and traffic-light feedback for recurring agent work
-
-This repo starts from a product hypothesis, not an implementation claim: agentic cron jobs need more than a Unix schedule. They need approximate routine windows, flexible recurrence patterns, observable state, validation, prompt/version history, and owner control.
-
-> Naming note: "MyCron" is a working name. Because it sounds like "Micron", this repo should keep trademark/brand-confusion review open before any commercial use.
+> 말하면 에이전트가 만들고, MyCron이 실행 가능한 화면으로 바꾸고, 사람들은 그것을 쓰고 공유한다.
 
 ---
 
-## Product thesis
+## Current direction
 
-Personal routines are rarely just streak counters. They often need approximate timing, adjustable cadence, soft windows, skipped days, recovery days, and pattern-level feedback.
+MyCron is not:
 
-MyCron applies that idea to agent operations:
+- an alarm app
+- a Unix cron dashboard
+- a Zapier/IFTTT clone
+- a Flutter-specific product
 
-> Did my Hermes Agent routines execute correctly, produce trustworthy output, and stay under owner control?
-
-A normal cron dashboard can say whether a job ran. MyCron should say whether an **agentic routine** remained useful, safe, aligned, and consistent with the owner's intended rhythm.
-
----
-
-## Core UI: traffic-light routine board
+MyCron is this loop:
 
 ```text
-[ MyCron: Hermes Agent Control Room ]
-
-Mon  Tue  Wed  Thu  Fri  Sat  Sun   Routine                         Controls
-🟢   🟢   🟢   🟢   ⚪   ⚪   ⚪    📰 Morning news research          ⚙️  ⏸  ❌
-🟡   🟢   🟢   🔴   ⚪   ⚪   ⚪    📈 Crypto volatility watch        ⚙️  ⏸  ❌
-🟢   🟢   🟢   🟢   ⚪   ⚪   ⚪    📝 Blog draft generation          ⚙️  ⏸  ❌
+Agent command
+→ Scheduled intent
+→ Utility Pack selection
+→ Cronlet creation
+→ Catalog-governed GenUI Spec
+→ PWA render
+→ User action
+→ Runtime feedback/history
 ```
 
-### Status semantics
+The first demo should prove the loop with **two visually different Packs**, not only one alarm screen:
 
-- 🟢 **Green / Pass**: ran on schedule and passed output validation.
-- 🟡 **Yellow / Degraded**: ran, but output was incomplete, schema-invalid, low-confidence, over-budget, or required human review.
-- 🔴 **Red / Failed**: scheduler/runtime/tool/auth/network failure prevented a valid run.
-- ⚪ **White / Pending**: scheduled window has not arrived yet.
-- ⚫ **Skipped / Paused**: disabled by owner or intentionally skipped by policy.
+1. `alarm.basic` — countdown / snooze / complete / history
+2. `daily-brief.basic` — digest cards / evidence / more-like-this / mute / history
 
----
+This shows the core GenUI claim:
 
-## Why this is not just cron
-
-Agentic AI routines are not binary batch jobs.
-
-A run can return HTTP 200 and still be bad:
-
-- empty summary
-- hallucinated source
-- missing citations
-- schema mismatch
-- context overflow
-- token/API budget violation
-- prompt drift after a configuration edit
-
-Therefore MyCron needs a validation layer before the UI is allowed to show 🟢.
+> Different scheduled intents produce different governed utility surfaces.
 
 ---
 
-## Validation model
+## Core concepts
 
-MyCron should classify each run through multiple gates:
+### Utility Pack
 
-1. **Scheduler gate**
-   - Did the job start on time?
-   - Did it finish within the configured timeout?
+A reusable package template that defines:
 
-2. **Runtime gate**
-   - Did all required tools return successfully?
-   - Were auth/token/network errors absent?
+- job schema
+- allowed widgets
+- allowed actions
+- permissions
+- default schedule pattern
+- feedback contract
+- marketplace metadata
 
-3. **Schema gate**
-   - Does the output satisfy the routine's declared contract?
-   - Recommended: JSON Schema / Zod / Pydantic-style validation.
+Examples:
 
-4. **Quality gate**
-   - Are required fields non-empty?
-   - Are citations present when required?
-   - Does the output match the requested language, length, and format?
+- `alarm.basic`
+- `daily-brief.basic`
+- `routine.basic` later
+- `monitor.basic` later
 
-5. **Judge gate** *(optional)*
-   - Lightweight LLM-as-judge or deterministic evaluator for tasks where schema alone is insufficient.
+### Cronlet
 
-Only after these gates pass should a run become 🟢.
+A user-created or installed runtime instance of a Utility Pack.
 
----
-
-## Prompt/version control
-
-Prompt edits change the meaning of success.
-
-So every routine should track:
-
-- `routine_id`
-- `schedule_version`
-- `prompt_version`
-- `validator_version`
-- `model_version`
-- `tool_policy_version`
-- `created_by`
-- `changed_at`
-- `change_note`
-
-A green run under prompt v1 is not directly comparable to a green run under prompt v4 unless the dashboard exposes that lineage.
-
----
-
-## Toward a small language for agent routines
-
-The hard part may not be UI alone. It may require a small domain language for scheduled agent work.
-
-Working name: **Routine Contract Language** / **RCL**.
-
-Example sketch:
-
-```yaml
-routine: morning-news
-schedule: weekdays around 07:30 Asia/Seoul
-rhythm:
-  preferred_window: "07:00-08:30"
-  grace_period: 45m
-  skip_policy: allow_owner_pause
-  pattern_goal: "4 successful weekday runs per week"
-owner_intent: "Summarize major AI and semiconductor news for Kiwon."
-
-agent:
-  model: default
-  tools: [web]
-  budget:
-    max_minutes: 8
-    max_tokens: 12000
-
-output_contract:
-  format: markdown
-  language: ko
-  sections:
-    - title: "Top 5"
-      required: true
-    - title: "Why it matters"
-      required: true
-    - title: "Sources"
-      required: true
-  citations:
-    min_count: 5
-
-status_policy:
-  green_if:
-    - schedule.completed
-    - output.schema_valid
-    - citations.count >= 5
-  yellow_if:
-    - output.partial
-    - citations.count < 5
-    - judge.confidence < 0.75
-  red_if:
-    - runtime.failed
-    - auth.failed
-    - timeout.exceeded
-```
-
-The point of the language is to make agent operations inspectable:
-
-> not just "run this prompt every morning", but "run this prompt under this contract, validate it this way, and explain the status color."
-
----
-
-## Proposed architecture
+Example:
 
 ```text
-Hermes cron runtime
-      │
-      ▼
-Run event collector ──► Run store
-      │                   │
-      ▼                   ▼
-Validation pipeline ──► Status classifier
-      │                   │
-      ▼                   ▼
-Prompt/version store ─► MyCron dashboard
+Utility Pack: alarm.basic
+Cronlet: Kiwon’s Laundry Reminder
+- run once in 15 minutes
+- render Countdown / Snooze / Complete
+- store feedback events
 ```
 
-### Components
+### GenUI Spec
 
-- **Dashboard UI**
-  - Next.js + Tailwind recommended for a polished routine-control board with flexible timing and pattern views.
-  - Streamlit may be acceptable only for an ultra-fast internal prototype.
+A validated JSON UI tree generated from:
 
-- **API layer**
-  - FastAPI or Next.js API routes.
-  - Reads Hermes cron metadata and run outputs.
+```text
+Cronlet state + Pack widget catalog + allowed actions
+```
 
-- **Run store**
-  - SQLite for local-first prototype.
-  - Postgres if multi-user / hosted.
+Renderer rule:
 
-- **Validation engine**
-  - Deterministic schema validation first.
-  - LLM-as-judge only when needed.
-
-- **Hermes integration**
-  - Import/list cron jobs.
-  - Pause/resume/remove jobs.
-  - Record run outputs and tool errors.
-  - Attach prompt and validator versions to each run.
+> The renderer never executes arbitrary code from a Pack. It only renders validated JSON specs from approved component catalogs and emits approved action events back to the runtime.
 
 ---
 
-## Initial milestones
+## Renderer strategy
 
-### M0 — Product contract
+MyCron is **renderer-agnostic**.
 
-- Define status semantics.
-- Define routine/run/version data model.
-- Define RCL draft.
-- Document Hermes integration boundaries.
+MVP:
 
-### M1 — Static dashboard prototype
+```text
+PWA / React renderer
+```
 
-- Render traffic-light weekly board from fixture JSON.
-- Click status cell to inspect run log, output, validator results.
-- Show prompt/version diff panel.
+Later options:
 
-### M2 — Local Hermes import
+```text
+Flutter shell
+React Native shell
+Native iOS / Android bridge
+```
 
-- Read existing Hermes cron job metadata.
-- Show real scheduled jobs in the dashboard.
-- No mutation yet.
+Flutter is optional. The core product is the **Utility Pack contract**, not a frontend framework.
 
-### M3 — Control plane
+---
 
-- Pause/resume/remove jobs.
-- Edit routine prompt with versioning.
-- Create new routine from natural language + generated RCL.
+## MVP demo scope
 
-### M4 — Validation pipeline
+MVP is a **two-pack GenUI loop demo**.
 
-- Add schema validators.
-- Add deterministic quality checks.
-- Add optional judge evaluator.
-- Make 🟢/🟡/🔴 explainable.
+Must implement:
+
+```text
+1. Pack Schema v0.1
+2. alarm.basic Pack
+3. daily-brief.basic Pack with fixture data
+4. CLI/API create command
+5. Cronlet persistence
+6. GenUI Spec generation
+7. PWA renderer
+8. Feedback event persistence
+9. History/state update
+```
+
+Explicit non-goals:
+
+```text
+real push notification
+robust cron scheduling
+real Polymarket integration
+marketplace publish/install
+Flutter/native app
+payments
+public sharing
+```
+
+Success criteria:
+
+```text
+1. Two different intents create two different Cronlets.
+2. Pack Resolver selects different catalogs.
+3. Two different GenUI Specs are generated.
+4. PWA renders visually different utility surfaces.
+5. User actions write feedback events.
+6. Runtime state/history changes and is visible.
+7. Demo recording makes viewers say: “AI가 저 화면을 만들었네.”
+```
+
+---
+
+## Example commands
+
+```bash
+mycron create --pack alarm.basic --after 15m "세탁기 확인"
+```
+
+```bash
+mycron create \
+  --pack daily-brief.basic \
+  --topic "Polymarket 재미있는 주제" \
+  --schedule "daily 08:30" \
+  --lang ko
+```
+
+Example JSON response:
+
+```json
+{
+  "ok": true,
+  "cronlet_id": "crn_001",
+  "job_id": "job_001",
+  "pack_id": "alarm.basic",
+  "surface_url": "http://localhost:3000/c/crn_001"
+}
+```
 
 ---
 
 ## Repository status
 
-This repository is currently a seed: product framing, architecture direction, and implementation milestones.
+This repository is currently a seed: product framing, Pack Schema direction, and implementation milestones.
 
-No production dashboard exists yet.
+No production runtime or PWA exists yet.
 
 ---
 
