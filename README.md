@@ -1,220 +1,118 @@
 # MyCron
 
-> MyCron turns agent-created scheduled intents into shareable Utility Packs, rendered through governed GenUI component catalogs.
+> MyCron is a user-owned control plane for the actions your AI agents schedule on your behalf.
 
-**MyCron** is a renderer-agnostic GenUI utility runtime for scheduled AI intents. Agents such as Hermes, Codex, and Claude Code create time-based intents through CLI/MCP/API; MyCron stores them as **Cronlets**, renders them through approved **Utility Pack** catalogs, and records user feedback back into runtime state.
+**MyCron** is a cross-agent control plane for agent-scheduled actions. Agents such as Hermes,
+Codex, and Claude Code register time-based actions through an agent-first CLI; MyCron stores
+them as **Cronlets**, gates risky **external actions** (payments, sends, account operations)
+behind user approval, and records every execution in an immutable **Audit Log**. The
+intelligence and execution stay with the agent; ownership, approval, and audit stay with the user.
 
 User-facing sentence:
 
-> 말하면 에이전트가 만들고, MyCron이 실행 가능한 화면으로 바꾸고, 사람들은 그것을 쓰고 공유한다.
+> 에이전트가 당신을 대신해 시간을 두고 행동한다. MyCron은 그것을 보고·승인·취소·감사하는, 당신이 소유한 통제면이다.
 
 ---
 
-## Current direction
+## Pivot note (2026-06-04)
 
-MyCron is not:
+This repository pivoted from a governed **GenUI utility runtime** to an **agent action
+control plane**. The GenUI direction (generation/delivery of UI) is crowded by large
+players and labs; the unfilled gap is the *substrate* — where agent-initiated actions
+persist, who owns them, and how they are controlled and audited over time. The previous
+GenUI direction is preserved under `docs/_archive-genui/`.
+
+---
+
+## What MyCron is / is not
+
+MyCron is **not**:
 
 - an alarm app
 - a Unix cron dashboard
 - a Zapier/IFTTT clone
-- a Flutter-specific product
+- a GenUI rendering layer (the earlier, now-archived direction)
 
-MyCron is this loop:
+MyCron **is** the control and audit plane for agent-initiated background actions.
+
+---
+
+## The loop
 
 ```text
-Agent command
-→ Scheduled intent
-→ Utility Pack selection
-→ Cronlet creation
-→ Catalog-governed GenUI Spec
-→ PWA render
-→ User action
-→ Runtime feedback/history
+Host agent registers a Scheduled Action
+→ Account-scoped Cronlet store
+→ Policy decision: internal action = auto-execute / external action = Approval Gate
+→ Approval Queue (external actions wait here)
+→ User approves / rejects on the Control Surface
+→ Execute / skip
+→ Immutable Audit Log
+→ Feedback Event back into runtime state and Policy
 ```
 
-The first demo should prove **real catalog-governed GenUI**, not only hand-written templates. The LLM should assemble a JSON UI spec from the selected Pack catalog, then the runtime validates it before rendering. The demo still uses two visually different Packs:
-
-1. `alarm.basic` — countdown / snooze / complete / history
-2. `daily-brief.basic` — digest cards / evidence / more-like-this / mute / history
-
-This shows the core GenUI claim:
-
-> Different scheduled intents produce different governed utility surfaces.
+The first demo proves three things: **P1** cross-agent registration, **P2** the Approval
+Gate (external actions do not run until approved), **P3** an immutable Audit Log. See
+`docs/design-control-plane-mvp.md`.
 
 ---
 
 ## Core concepts
 
-### Utility Pack
+Defined in `CONTEXT.md`. In short:
 
-A reusable package template that defines:
-
-- job schema
-- allowed widgets
-- allowed actions
-- permissions
-- default schedule pattern
-- feedback contract
-- marketplace metadata
-
-Examples:
-
-- `alarm.basic`
-- `daily-brief.basic`
-- `routine.basic` later
-- `monitor.basic` later
-
-### Cronlet
-
-A user-created or installed runtime instance of a Utility Pack.
-
-Example:
-
-```text
-Utility Pack: alarm.basic
-Cronlet: Kiwon’s Laundry Reminder
-- run once in 15 minutes
-- render Countdown / Snooze / Complete
-- store feedback events
-```
-
-### GenUI Spec
-
-A validated JSON UI tree generated from:
-
-```text
-Cronlet state + Pack widget catalog + allowed actions
-```
-
-Renderer rule:
-
-> The renderer never executes arbitrary code from a Pack. It only renders validated JSON specs from approved component catalogs and emits approved action events back to the runtime.
+- **Host Agent** — external agent (Hermes, Claude, GPT) that decides and registers actions; owns execution and its LLM cost.
+- **Scheduled Action** — "do X at time/condition Y", registered by an agent.
+- **Action Type** — `internal` (reversible: notify, brief) vs `external` (hard to reverse: payment, email_send, account_op).
+- **Cronlet** — a stored, controllable instance of a scheduled action in an Account.
+- **Account** — the user-owned ownership boundary (the basis for cross-agent neutrality).
+- **Approval Gate / Approval Queue** — external actions wait for user approval before execution.
+- **Policy** — which action types auto-execute vs require approval (rule-based now, learned later).
+- **Audit Log** — immutable record of what executed/was rejected, when, by which agent.
+- **Control Surface** — where the user sees, approves, cancels, and audits.
 
 ---
 
-## Renderer strategy
+## Customer
 
-MyCron is **renderer-agnostic**.
+- **Boot (now):** the coding/agent ecosystem (OMC, Claude Code, Hermes). Coding agents
+  increasingly schedule background work (cron, deploys, monitoring) with no place to
+  control it. Natural 0→1 — accumulates usage, approval patterns, and audit data.
+- **Revenue:** enterprise. Where agents touch payments, sends, and accounts, pre-execution
+  approval and audit trails are compliance-critical and paid for today (regulated /
+  finance-adjacent).
 
-MVP:
+## Moat
 
-```text
-PWA / React renderer
-```
-
-Later options:
-
-```text
-Flutter shell
-React Native shell
-Native iOS / Android bridge
-```
-
-Flutter is optional. The core product is the **Utility Pack contract**, not a frontend framework.
+1. **Cross-agent neutrality.** A user-owned control plane any agent can write to. Labs keep
+   users inside their own agent (lock-in); a *neutral* control plane that covers competing
+   agents is something they structurally will not build. Neutrality is the defense.
+2. **Accumulating approval/audit data.** Which actions users approve/reject, what is safe to
+   auto-execute, compounds in MyCron's layer and cannot be taken by the host.
 
 ---
 
-## MVP demo scope
-
-MVP is a **two-pack GenUI loop demo**.
-
-Must implement:
-
-```text
-1. Pack Schema v0.1
-2. alarm.basic Pack
-3. daily-brief.basic Pack with mock/source data
-4. CLI/API create command
-5. Supabase persistence for Cronlets, UI Specs, and feedback events
-6. LLM-based GenUI Spec generation constrained by Pack catalog
-7. Zod validation + catalog/action validation + safe fallback
-8. PWA renderer
-9. Feedback event persistence
-10. History/state update
-```
-
-Explicit non-goals:
-
-```text
-real push notification
-robust cron scheduling
-real Polymarket integration
-marketplace publish/install
-Flutter/native app
-payments
-public sharing
-```
-
-Success criteria:
-
-```text
-1. Two different intents create two different Cronlets.
-2. Pack Resolver selects different catalogs.
-3. The LLM generates two different GenUI Specs from the selected catalogs.
-4. Zod/catalog validation rejects widgets or actions outside the Pack contract.
-5. PWA renders visually different utility surfaces.
-6. User actions write feedback events to Supabase.
-7. Runtime state/history changes and is visible.
-8. Demo recording makes viewers say: “AI가 저 화면을 만들었네.”
-```
-
----
-
-## Real GenUI path
-
-```text
-intent
-→ API
-→ LLM with Pack catalog context
-→ structured JSON GenUI Spec
-→ Zod validation
-→ catalog/action validation
-→ render
-→ feedback
-→ Supabase runtime state
-```
-
-See `docs/llm-genui.md` for the generation and validation contract.
-
-CLI design note: `mycron` is a full CRUD client for the user's Cronlet store, not a push-only write port. See `docs/agent-action-cli.md`.
-
----
-
-## Example commands
+## Example (agent-first CLI)
 
 ```bash
-mycron create --pack alarm.basic --after 15m "세탁기 확인"
+# external action → goes to the approval queue, does not run yet
+mycron create --json '{"action_type":"email.send","schedule":"tomorrow 09:00","args":{"to":"client@x.com","subject":"Invoice"}}'
+
+# user (or script) approves a queued action
+mycron approve crn_001
+
+# internal action → auto-executes per policy
+mycron create --json '{"action_type":"brief.daily","schedule":"daily 08:30","args":{"topic":"..."}}'
 ```
 
-```bash
-mycron create \
-  --pack daily-brief.basic \
-  --topic "Polymarket 재미있는 주제" \
-  --schedule "daily 08:30" \
-  --lang ko
-```
-
-Example JSON response:
-
-```json
-{
-  "ok": true,
-  "cronlet_id": "crn_001",
-  "job_id": "job_001",
-  "pack_id": "alarm.basic",
-  "surface_url": "http://localhost:3000/c/crn_001"
-}
-```
+CLI is an agent-first CRUD client for the Cronlet store plus control verbs
+(`approve` / `reject`). See `docs/adr/0003-agent-first-cli.md`.
 
 ---
 
 ## Repository status
 
-This repository is currently a seed: product framing, Pack Schema direction, and implementation milestones.
-
-No production runtime or PWA exists yet.
-
----
+Seed: domain model (`CONTEXT.md`), architecture decisions (`docs/adr/0001~0003`), and MVP
+design (`docs/design-control-plane-mvp.md`). No production runtime or PWA exists yet.
 
 ## License
 
