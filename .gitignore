@@ -1,6 +1,7 @@
 node_modules/
 .next/
 dist/
+app/dist/
 build/
 .env
 .env.*
@@ -9,3 +10,4 @@ build/
 .omc/
 .omx/
 .codex/
+.vercel

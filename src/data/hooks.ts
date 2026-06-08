@@ -18,6 +18,9 @@ import type {
   CronletDraft,
   DonePolicyDraft,
   EvidenceType,
+  AccountProfile,
+  ComputeBudget,
+  AlertPreference,
 } from "../types/mycron";
 import { useApi } from "./provider";
 
@@ -91,6 +94,21 @@ export function useWeeklyReview(rangeStart?: string): Async<WeeklyReview> {
   return useAsync(() => api.getWeeklyReview(rangeStart), [api, rangeStart]);
 }
 
+export function useAccount(): Async<AccountProfile | null> {
+  const api = useApi();
+  return useAsync(() => api.getAccount(), [api]);
+}
+
+export function useComputeBudget(): Async<ComputeBudget | null> {
+  const api = useApi();
+  return useAsync(() => api.getComputeBudget(), [api]);
+}
+
+export function useAlertPreferences(): Async<AlertPreference[]> {
+  const api = useApi();
+  return useAsync(() => api.getAlertPreferences(), [api]);
+}
+
 // ---- actions (imperative) ----
 export function useCronletActions() {
   const api = useApi();
@@ -109,6 +127,8 @@ export function useCronletActions() {
     promoteInbox: (id: string) => api.promoteInbox(id),
     dismissInbox: (id: string) => api.dismissInbox(id),
     applySuggestion: (id: string) => api.applySuggestion(id),
+    setAlertPreference: (key: string, enabled: boolean) =>
+      api.setAlertPreference(key, enabled),
   };
 }
 
