@@ -1,0 +1,35 @@
+export type ExitCode = 0 | 1 | 2 | 3 | 4 | 5;
+
+export const exitCodes = {
+  ok: 0,
+  runtime: 1,
+  usage: 2,
+  conflict: 3,
+  auth: 4,
+  notFound: 5,
+} as const satisfies Record<string, ExitCode>;
+
+export type MyCronErrorCode =
+  | "USAGE_ERROR"
+  | "SCHEMA_VALIDATION_FAILED"
+  | "MISSING_CONFIRM"
+  | "CLIENT_REF_CONFLICT"
+  | "UNAUTHORIZED"
+  | "NOT_FOUND"
+  | "NOT_IMPLEMENTED";
+
+export function exitCodeForError(code: MyCronErrorCode): ExitCode {
+  if (code === "CLIENT_REF_CONFLICT") {
+    return exitCodes.conflict;
+  }
+  if (code === "UNAUTHORIZED") {
+    return exitCodes.auth;
+  }
+  if (code === "NOT_FOUND") {
+    return exitCodes.notFound;
+  }
+  if (code === "USAGE_ERROR" || code === "SCHEMA_VALIDATION_FAILED" || code === "MISSING_CONFIRM") {
+    return exitCodes.usage;
+  }
+  return exitCodes.runtime;
+}
