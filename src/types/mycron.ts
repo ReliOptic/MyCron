@@ -149,6 +149,31 @@ export interface ImprovementSuggestion {
   cronletId?: string;
 }
 
+// ---- Account / workspace surface ----
+export interface AccountProfile {
+  id: string;
+  name: string;
+  email: string;
+  plan: string;
+  avatarInitials?: string;
+}
+
+export interface ComputeBudget {
+  usedLabel: string;
+  limitLabel: string;
+  usedFraction: number;
+  routines: number;
+  runsPerWeek: number;
+  renewsLabel: string;
+}
+
+export interface AlertPreference {
+  key: string;
+  label: string;
+  detail?: string;
+  enabled: boolean;
+}
+
 // ---- Builder draft (create/edit flow) ----
 export interface DonePolicyDraft {
   ran: boolean;        // required: process completes cleanly

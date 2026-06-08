@@ -9,6 +9,7 @@
 
 import type {
   Cronlet, Run, InboxRequest, WeeklyReview, CronletDraft,
+  AccountProfile, ComputeBudget, AlertPreference,
 } from "../types/mycron";
 
 export interface MyCronApi {
@@ -47,6 +48,12 @@ export interface MyCronApi {
   // ---- weekly review ----
   getWeeklyReview(rangeStart?: string): Promise<WeeklyReview>;
   applySuggestion(suggestionId: string): Promise<void>;
+
+  // ---- account / workspace ----
+  getAccount(): Promise<AccountProfile | null>;
+  getComputeBudget(): Promise<ComputeBudget | null>;
+  getAlertPreferences(): Promise<AlertPreference[]>;
+  setAlertPreference(key: string, enabled: boolean): Promise<void>;
 }
 
 // ------------------------------------------------------------

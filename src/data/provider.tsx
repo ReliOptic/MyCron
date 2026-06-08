@@ -41,6 +41,9 @@ export const EmptyApi: MyCronApi = {
   },
   listRuns: async () => ({ runs: [] }),
   listInbox: async () => [],
+  getAccount: async () => null,
+  getComputeBudget: async () => null,
+  getAlertPreferences: async () => [],
   getWeeklyReview: async (): Promise<WeeklyReview> => ({
     rangeLabel: "",
     verifiedRuns: 0,
@@ -92,6 +95,9 @@ export const EmptyApi: MyCronApi = {
   },
   applySuggestion: async () => {
     throw new NotImplementedError("applySuggestion");
+  },
+  setAlertPreference: async () => {
+    throw new NotImplementedError("setAlertPreference");
   },
 };
 
