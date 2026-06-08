@@ -1,5 +1,6 @@
 import { exitCodes } from "../../../packages/schema/src";
 import { commandFor, errorEnvelope, okEnvelope } from "./envelopes";
+import { cronletCommand } from "./cronlet-command";
 import { packCommand } from "./pack-command";
 import { schemaCommand } from "./schema-command";
 import type { CliEnv, CliResult, ParsedCommand } from "./types";
@@ -31,14 +32,14 @@ export function executeJson(parsed: ParsedCommand, env: CliEnv): CliResult {
   if (parsed.resource === "pack") {
     return packCommand(parsed, env, command);
   }
+  if (parsed.resource === "cronlet") {
+    return cronletCommand(parsed, env, command);
+  }
   if (!parsed.resource || !knownResources.has(parsed.resource)) {
     return jsonError(command, env, "USAGE_ERROR", "Unknown MyCron resource.", "mycron --help", exitCodes.usage);
   }
   if (parsed.resource === "approval" && parsed.verb === "approve") {
     return approvalApprove(parsed, env, command);
-  }
-  if (parsed.resource === "cronlet" && parsed.verb === "create") {
-    return cronletCreate(parsed, env, command);
   }
   return jsonError(
     command,
@@ -104,44 +105,6 @@ function approvalApprove(parsed: ParsedCommand, env: CliEnv, command: string): C
       external_execution_approved: true,
     },
   );
-}
-
-function cronletCreate(parsed: ParsedCommand, env: CliEnv, command: string): CliResult {
-  if (parsed.flags["dry-run"] === true) {
-    const envelope = okEnvelope(command, env, mutationResult(parsed, "dry_run", false), null);
-    return jsonOk(envelope);
-  }
-  if (parsed.flags.confirm !== true) {
-    return jsonError(
-      command,
-      env,
-      "MISSING_CONFIRM",
-      "cronlet create requires --dry-run or --confirm.",
-      "mycron cronlet create --file routine.mc --dry-run --json",
-      exitCodes.usage,
-    );
-  }
-  return jsonError(
-    command,
-    env,
-    "NOT_IMPLEMENTED",
-    "Cronlet persistence is not implemented in the skeleton.",
-    "mycron cronlet create --file routine.mc --dry-run --json",
-    exitCodes.runtime,
-    mutationResult(parsed, "not_implemented", true),
-  );
-}
-
-function mutationResult(parsed: ParsedCommand, outcome: string, confirmedWrite: boolean) {
-  return {
-    outcome,
-    resource: parsed.resource,
-    verb: parsed.verb,
-    input_file: typeof parsed.flags.file === "string" ? parsed.flags.file : null,
-    changed: false,
-    confirmed_write: confirmedWrite,
-    external_execution_approved: false,
-  };
 }
 
 function jsonOk(envelope: unknown): CliResult {
