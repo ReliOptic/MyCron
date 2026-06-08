@@ -30,7 +30,8 @@ export type AuditEvent = { id: string; resource: string; action: string; target_
 export type EvidenceRecord = { id: string; run_id: string; payload: Record<string, unknown>; provenance: "self_reported" | "runtime_attested" | "verified" | "rejected"; verification_state: "unverified" | "verified" | "rejected"; counts_toward_done: boolean };
 export type MygrationRecord = { id: string; source: string; candidates: Array<{ client_ref: string }> };
 export type MemoryRecord = { id: string; content: string | null; client_ref: string | null; domain: string | null; type: string | null; revision: number; supersedes_revision: number | null; content_purged: boolean; detached_from_future_context: boolean };
-export type StoreData = { cronlets: CronletRecord[]; approvals: ApprovalRecord[]; runs: RunRecord[]; evidence: EvidenceRecord[]; mygrations: MygrationRecord[]; memories: MemoryRecord[]; audit: AuditEvent[] };
+export type AccountRecord = { alerts: Record<string, boolean> };
+export type StoreData = { cronlets: CronletRecord[]; approvals: ApprovalRecord[]; runs: RunRecord[]; evidence: EvidenceRecord[]; mygrations: MygrationRecord[]; memories: MemoryRecord[]; account: AccountRecord; audit: AuditEvent[] };
 
 export type Store = {
   data: StoreData;
@@ -66,13 +67,13 @@ function storePath(env: CliEnv): string {
 
 function readData(path: string): StoreData {
   if (!existsSync(path)) {
-    return { cronlets: [], approvals: [], runs: [], evidence: [], mygrations: [], memories: [], audit: [] };
+    return { cronlets: [], approvals: [], runs: [], evidence: [], mygrations: [], memories: [], account: { alerts: {} }, audit: [] };
   }
   return normalizeData(JSON.parse(readFileSync(path, "utf8")) as Partial<StoreData>);
 }
 
 function normalizeData(data: Partial<StoreData>): StoreData {
-  return { cronlets: data.cronlets ?? [], approvals: data.approvals ?? [], runs: data.runs ?? [], evidence: data.evidence ?? [], mygrations: data.mygrations ?? [], memories: data.memories ?? [], audit: data.audit ?? [] };
+  return { cronlets: data.cronlets ?? [], approvals: data.approvals ?? [], runs: data.runs ?? [], evidence: data.evidence ?? [], mygrations: data.mygrations ?? [], memories: data.memories ?? [], account: data.account ?? { alerts: {} }, audit: data.audit ?? [] };
 }
 
 function writeData(path: string, data: StoreData): void {
