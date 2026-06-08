@@ -6,15 +6,25 @@
 대상 독자: 개발자, 디자이너, 공동창업자, 초기 사용자 인터뷰 참여자  
 핵심 방향: **PWA first / Renderer-agnostic / Pack Schema 중심 / Two-Pack GenUI Demo MVP**
 
+> 2026-06 strategy update: 이 PRD의 Utility Pack/GenUI 방향은 유지하되, 제품 중심 언어는 **scheduled agent routine control plane**으로 확장한다. `Utility Pack`은 surface/rendering contract이고, `.mc`/`Cronlet`/`Done Policy`/`Evidence`/`runtime migration`이 운영 신뢰의 핵심 object다. 최신 포트폴리오/게이트웨이 관계는 [`docs/strategy.md`](strategy.md)를 canonical strategy addendum으로 둔다.
+
 ---
 
 ## 1. 제품 한 줄 정의
 
 > **MyCron은 AI 에이전트가 만든 시간 기반 의도를, 사용자가 실행·수정·공유할 수 있는 Utility Pack으로 바꾸는 런타임이다.**
 
+2026-06 expanded line:
+
+> **MyCron은 사용자가 AI agent에게 위임한 반복/예약 업무를 `.mc` Cronlet으로 정규화하고, 실행·검증·이전·승인·감사할 수 있게 만드는 scheduled agent routine control plane이다.**
+
 English:
 
 > **MyCron turns agent-created scheduled intents into shareable Utility Packs, rendered through governed GenUI component catalogs.**
+
+2026-06 expanded English:
+
+> **MyCron turns delegated scheduled agent work into portable `.mc` Cronlets with Done Policy, evidence, audit history, and runtime migration.**
 
 사용자용 문장:
 
@@ -27,6 +37,13 @@ English:
 MyCron은 알람 앱이 아니다.  
 MyCron은 cron scheduler도 아니다.  
 MyCron은 Zapier/IFTTT 복제품도 아니다.
+MyCron은 단순 dashboard도 아니다.
+
+2026-06 전략상 MyCron의 핵심 질문은 다음이다.
+
+> **Did the delegated recurring work actually complete?**
+
+따라서 GenUI surface는 중요하지만, 최종 차별화는 `Done Policy`와 `Evidence`를 통해 “실행했다는 메시지”가 아니라 “위임된 일이 실제로 완료됐는지”를 검증하는 데 있다.
 
 MyCron의 본질은 아래 루프다.
 
@@ -64,6 +81,20 @@ AI 에이전트는 명령을 만들고 외부 앱 action을 호출할 수 있다
 
 > **AI 에이전트는 명령을 만들 수 있지만, 시간 기반 의도를 지속적으로 실행·수정·확인·공유할 수 있는 사용자 surface가 부족하다.**
 
+2026-06-08 research update:
+
+> **사용자는 Cron을 원하는 것이 아니라, 위임한 AI 업무가 실제로 수행됐는지 확인 가능한 상태를 원한다.**
+
+The strongest early-user pain is visible in AI workspace operator cases:
+
+```text
+“했다는데 파일이 없음”        → Proof of Work
+“며칠 동안 실패했는데 몰랐음” → Run Health Monitoring
+“산출물이 어디 있는지 모름”   → Evidence / Artifact Index
+“보고 품질이 흔들림”          → Agent Behavior Feedback
+“문제 생길 때만 고침”         → Weekly Optimization Loop
+```
+
 예:
 
 ```text
@@ -78,7 +109,7 @@ Polymarket에서 매일 재미있는 주제들을 정리해줘.
 
 기존 방식에서는 이것이 단순 알림, 텍스트 응답, 스크립트, cron job, 자동화 recipe로 흩어진다.
 
-MyCron은 이것을 사용자가 볼 수 있고, 조작할 수 있고, 반복 실행할 수 있고, 공유할 수 있는 **Utility Pack surface**로 만든다.
+MyCron은 이것을 사용자가 볼 수 있고, 조작할 수 있고, 반복 실행할 수 있고, 공유할 수 있는 **Utility Pack surface**로 만든다. 확장 전략상 MyCron은 여기에 **Done Policy, Evidence, Run Health, Weekly Review**를 더해 scheduled agent work의 운영 신뢰성을 관리한다.
 
 ---
 
@@ -270,6 +301,9 @@ digest.less_like_this
 8. PWA renderer
 9. Feedback event persistence
 10. History/state update
+11. Evidence/read-back command for each created Cronlet
+12. Run health status: success / failed / stale / unverified
+13. Weekly Review placeholder surface using stored run/evidence history
 ```
 
 ### 구현하지 않음
@@ -294,7 +328,11 @@ public sharing
 5. PWA renders visually different utility surfaces.
 6. User actions write feedback events to Supabase.
 7. Runtime state/history changes and is visible.
-8. Demo recording makes viewers say: “AI가 저 화면을 만들었네.”
+8. Each create/write response includes evidence/read-back path.
+9. Each run has a health state: success / failed / stale / unverified.
+10. A user can inspect Proof Panel evidence instead of trusting the agent’s message.
+11. Demo recording makes viewers say: “AI가 저 화면을 만들었네.”
+12. Operator demo makes viewers say: “AI가 실제로 했는지 확인할 수 있네.”
 ```
 
 ---

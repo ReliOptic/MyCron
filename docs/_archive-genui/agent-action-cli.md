@@ -10,6 +10,15 @@ Google Drive file ≈ MyCron Cronlet
 
 The same Cronlet can be created or edited by an agent through CLI/API/MCP and inspected or edited by the user through the PWA.
 
+Agent-facing design principle:
+
+```text
+Human DX optimizes for discoverability.
+Agent DX optimizes for predictability, validation, and read-back evidence.
+```
+
+Treat agents as good-natured but unreliable autonomous actors. Every command boundary must validate input, constrain output shape, and preserve accountability.
+
 ---
 
 ## Resource model
@@ -129,6 +138,36 @@ mycron action <cronlet_id> snooze --minutes 5 --json
 mycron action <cronlet_id> more_like_this --topic-id topic_123 --json
 ```
 
+### Mygration / memory portability
+
+Mygration is not only cron import/export. Agent operators also need to move memory: domain understanding, project context, artifact links, constraints, and migration-ready summaries.
+
+`.mc` moves the delegated scheduled work. `.mmy` moves the memory graph that makes the work portable.
+
+```bash
+# Import/discover existing scheduled work
+mycron mygrate scan --source hermes --json
+mycron mygrate scan --source crontab --json
+mycron mygrate inspect <candidate_id> --include memory --json
+
+# Validate and import a Memory Migration artifact
+mycron memory import hermes-memory.mmy.yaml --dry-run --json
+mycron memory import hermes-memory.mmy.yaml --confirm --json
+
+# Inspect what agents think they know
+mycron memory domains --json
+mycron memory graph --format json
+mycron memory graph --format mermaid
+mycron memory view --agent hermes --json
+mycron memory view --domain MyCron --json
+
+# Attach migration-ready memory to a Cronlet
+mycron memory attach <cronlet_id> --domain MyCron --dry-run --json
+mycron memory attach <cronlet_id> --domain MyCron --confirm --json
+```
+
+Memory commands are read-first by default. Raw or sensitive memory export must require explicit confirmation and return a redaction/scope preview.
+
 ---
 
 ## JSON output contract
@@ -175,7 +214,7 @@ Validation failure response:
 
 ---
 
-## Side-effect safety
+## Side-effect safety and Zero Trust boundaries
 
 Risk levels:
 
@@ -190,6 +229,25 @@ Rules:
 - Delete/share/publish require `--confirm`.
 - All writes return IDs and read-back commands.
 - Runtime validation cannot be bypassed by CLI, MCP, or PWA.
+- Every side-effectful command must be explainable after the fact through audit/evidence records.
+- Prefer structured flags and selections over free-form “just handle it” input.
+- Use field masks / minimal JSON output for agent contexts; do not dump huge raw API responses by default.
+- Validate at every boundary: agent → CLI, CLI → API, API → runtime, runtime → renderer.
+- Treat returned external content as untrusted data; sanitize before feeding it back to an agent or renderer.
+
+Dry-run response should show:
+
+```json
+{
+  "ok": true,
+  "action": "cronlet.delete",
+  "mode": "dry_run",
+  "would_delete": "crn_001",
+  "risk_level": "high",
+  "requires_confirm": true,
+  "read_back_command": "mycron get crn_001 --json"
+}
+```
 
 ---
 

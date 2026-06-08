@@ -2,6 +2,8 @@
 
 MyCron's demo should prove real governed GenUI, not only hand-written templates.
 
+> 2026-06 strategy connection: governed GenUI is now framed as the **surface layer** of MyCron. The product center is the `.mc` Cronlet runtime with schedule, Done Policy, evidence, audit/history, and runtime migration. The GenUI spec renders and manipulates Cronlet state; it should not be treated as the whole product.
+
 ## Goal
 
 ```text

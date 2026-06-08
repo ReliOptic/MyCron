@@ -1,6 +1,8 @@
 # MyCron implementation plan
 
-> **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task.
+> **2026-06 update:** This older plan is preserved as the Utility Pack / governed GenUI surface-layer plan. Do **not** treat it as the full product implementation sequence. Before scaffolding app/runtime code, read [`docs/product-implementation-spec.md`](product-implementation-spec.md), which makes `.mc` / Cronlet / Done Policy / Evidence / Run Health / Weekly Review the implementation center and positions Utility Pack / GenUI as a later governed surface layer.
+
+> **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task only after reconciling it with the latest product implementation spec.
 
 **Goal:** Build a real catalog-governed GenUI demo where an LLM assembles validated Utility Pack surfaces and user actions write runtime feedback.
 

@@ -24,6 +24,25 @@ GenUI direction is preserved under `docs/_archive-genui/`.
 
 ---
 
+## Canonical implementation standard
+
+Read these before asking Claude Code to scaffold implementation:
+
+- [`docs/product-implementation-spec.md`](docs/product-implementation-spec.md): latest CTO-level build direction for moving this docs-only seed repo toward a real MyCron runtime, CLI, and control surface.
+- [`docs/strategy.md`](docs/strategy.md): ShareIdee portfolio/gateway strategy and current MyCron/Campsite/BALTAM boundary.
+- [`docs/adr/0003-agent-first-cli.md`](docs/adr/0003-agent-first-cli.md): current agent-first CLI ADR from the pivoted control-plane direction.
+- [`docs/mygration-memory-portability.md`](docs/mygration-memory-portability.md): Mygration as migration of Cronlets plus agent memory, including the proposed `.my` memory migration artifact.
+
+CTO standard:
+
+```text
+GWS CLI-level responsiveness
++ Google Calendar-grade schedule/sync discipline
++ Rust-grade reliability on correctness-critical runtime paths
+```
+
+---
+
 ## What MyCron is / is not
 
 MyCron is **not**:
@@ -83,10 +102,13 @@ Defined in `CONTEXT.md`. In short:
 
 ## Moat
 
-1. **Cross-agent neutrality.** A user-owned control plane any agent can write to. Labs keep
+1. **Low-friction agent operation.** Like `gws`, `mycron` should be fast, schema-driven,
+   JSON-readable, dry-run/confirm safe, and read-back verifiable. The faster agents can
+   register, inspect, and verify Cronlets, the stronger the control-plane moat.
+2. **Cross-agent neutrality.** A user-owned control plane any agent can write to. Labs keep
    users inside their own agent (lock-in); a *neutral* control plane that covers competing
    agents is something they structurally will not build. Neutrality is the defense.
-2. **Accumulating approval/audit data.** Which actions users approve/reject, what is safe to
+3. **Accumulating approval/audit data.** Which actions users approve/reject, what is safe to
    auto-execute, compounds in MyCron's layer and cannot be taken by the host.
 
 ---
@@ -105,14 +127,16 @@ mycron create --json '{"action_type":"brief.daily","schedule":"daily 08:30","arg
 ```
 
 CLI is an agent-first CRUD client for the Cronlet store plus control verbs
-(`approve` / `reject`). See `docs/adr/0003-agent-first-cli.md`.
+(`approve` / `reject`). See `docs/adr/0003-agent-first-cli.md` and
+`docs/product-implementation-spec.md`.
 
 ---
 
 ## Repository status
 
-Seed: domain model (`CONTEXT.md`), architecture decisions (`docs/adr/0001~0003`), and MVP
-design (`docs/design-control-plane-mvp.md`). No production runtime or PWA exists yet.
+Seed: domain model (`CONTEXT.md`), architecture decisions (`docs/adr/0001~0003`), MVP
+design (`docs/design-control-plane-mvp.md`), and CTO implementation standard
+(`docs/product-implementation-spec.md`). No production runtime or PWA exists yet.
 
 ## License
 
