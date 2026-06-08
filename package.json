@@ -9,14 +9,20 @@
     "dev": "vite --config app/vite.config.ts",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p app/tsconfig.json --noEmit",
     "build": "vite build --config app/vite.config.ts",
-    "preview": "vite preview --config app/vite.config.ts --host 127.0.0.1"
+    "preview": "vite preview --config app/vite.config.ts --host 127.0.0.1",
+    "test": "vitest run --config app/vitest.config.ts"
   },
   "devDependencies": {
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.7.0",
+    "jsdom": "^29.1.1",
     "typescript": "^5.6.3",
-    "vite": "^6.4.3"
+    "vite": "^6.4.3",
+    "vitest": "^4.1.8"
   },
   "dependencies": {
     "lucide-react": "^0.468.0",
