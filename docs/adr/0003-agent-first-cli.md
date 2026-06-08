@@ -1,5 +1,9 @@
 # MyCron CLI는 agent-first로 설계한다 (gws 패턴)
 
+> Status: accepted — 단, **동사 집합과 `--json` 입력 부분은 ADR-0004가 supersede**한다.
+> agent-first 원칙(raw-JSON 친화, schema introspection, env-var auth, 입력 하드닝)은 유효하고,
+> 구체 문법은 [`0004-cli-command-grammar.md`](0004-cli-command-grammar.md) + [`../mycron-cli-grammar.md`](../mycron-cli-grammar.md)를 따른다.
+
 MyCron CLI의 1차 소비자는 사람이 아니라 host agent다. Justin Poehnelt의 Google Workspace
 CLI(`gws`) 패턴을 채택한다: raw-JSON 입력(`--json '{전체 action payload}'`, bespoke 플래그
 아님), 런타임 schema introspection(`mycron schema <action-type>`로 행동 계약·필수 인자를

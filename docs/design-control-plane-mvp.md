@@ -72,8 +72,8 @@ Policy(C)는 엔터프라이즈 진화 단계로 미룬다.
 
 ```
 [host agent (Hermes 등) — 지능·실행 소유]
-  → mycron schema <action-type>     : 행동 계약·필수 인자 조회 (런타임 introspection)
-  → mycron create --json '{action}' : agent-first CLI, raw-JSON 등록
+  → mycron schema action get <type>      : 행동 계약·필수 인자 조회 (런타임 introspection)
+  → mycron cronlet create --file r.mc --confirm --json : agent-first CLI, 등록 (ADR-0004)
 [MyCron 서버 — 통제·서빙 런타임]
   → ingestion 검증: Action Type·인자 검증, 악성·범위 밖 거부 (ADR-0002)
   → cronlet 영속화 (Account 스코프)
