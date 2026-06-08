@@ -29,6 +29,7 @@ GenUI direction is preserved under `docs/_archive-genui/`.
 Read these before asking Claude Code to scaffold implementation:
 
 - [`docs/product-implementation-spec.md`](docs/product-implementation-spec.md): latest CTO-level build direction for moving this docs-only seed repo toward a real MyCron runtime, CLI, and control surface.
+- [`docs/agent-runtime-harness-spec.md`](docs/agent-runtime-harness-spec.md): canonical Agent / Runtime / RuntimeBinding / Harness vocabulary and MVP boundary.
 - [`docs/strategy.md`](docs/strategy.md): ShareIdee portfolio/gateway strategy and current MyCron/Campsite/BALTAM boundary.
 - [`docs/adr/0003-agent-first-cli.md`](docs/adr/0003-agent-first-cli.md): current agent-first CLI ADR from the pivoted control-plane direction.
 - [`docs/adr/0004-cli-command-grammar.md`](docs/adr/0004-cli-command-grammar.md) + [`docs/mycron-cli-grammar.md`](docs/mycron-cli-grammar.md): canonical CLI command grammar (resource-scoped, `--json` output-only, `client_ref` idempotency, `--confirm` vs Approval Gate).
@@ -81,6 +82,8 @@ Gate (external actions do not run until approved), **P3** an immutable Audit Log
 Defined in `CONTEXT.md`. In short:
 
 - **Host Agent** — external agent (Hermes, Claude, GPT) that decides and registers actions; owns execution and its LLM cost.
+- **Harness** — the operating layer around scheduled agent work: memory, I/O, scheduling, orchestration, approval, evidence, verification, and audit.
+- **Runtime / RuntimeBinding** — the place where agent work runs, and the current Cronlet-to-runtime binding used for future runs.
 - **Scheduled Action** — "do X at time/condition Y", registered by an agent.
 - **Action Type** — `internal` (reversible: notify, brief) vs `external` (hard to reverse: payment, email_send, account_op).
 - **Cronlet** — a stored, controllable instance of a scheduled action in an Account.
