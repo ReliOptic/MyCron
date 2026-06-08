@@ -132,11 +132,48 @@ CLI is an agent-first CRUD client for the Cronlet store plus control verbs
 
 ---
 
+## UI foundation (design handoff)
+
+The React + TypeScript **UI contract** lives in `src/` and is **typecheck-only** — no
+application stack (Vite/Next), bundler, or CSS pipeline is committed yet, so the repo stays
+framework-neutral until the product implementation stack is explicitly chosen.
+
+```
+src/
+  types/mycron.ts        # domain types: Cronlet, Run, DonePolicy, EvidenceItem, InboxRequest, WeeklyReview
+  data/api.ts            # MyCronApi — the endpoints the UI expects
+  data/provider.tsx      # ApiProvider + EmptyApi (mock-free default)
+  data/hooks.ts          # useCronlets / useCronlet / useInbox / useWeeklyReview + derivations
+  components/             # StatusBadge, HealthStrip, Mono, EmptyState, CronletCard, RunConsole
+  styles/tokens.ts       # color / status / type / radius / shadow tokens
+docs/design/mycron-handoff/
+  design_reference/       # desktop + mobile HTML/JSX prototypes — VISUAL REFERENCE ONLY
+```
+
+Rules this foundation enforces (do not break them when wiring a backend):
+
+- **`docs/design/mycron-handoff/design_reference/` is visual reference only.** It is never
+  imported by `src/`. Its `shared/data.jsx` is mock data **for the prototype's legibility —
+  do not port it into production.** Do not copy Builder presets (`Staging Deploy Watch`,
+  `OpsAgent`, etc.) or any fabricated cronlets / run IDs / metrics into `src/`.
+- **The `src/` contract is mock-free.** Components are pure: they read typed props and
+  `tokens.ts`, and pull data only through the hooks in `src/data/`.
+- **`EmptyApi` is the honest default.** Reads resolve to empty data (UI renders loading →
+  empty states with zero presets); **writes throw `NotImplementedError`** — a control plane
+  must never report a silent success for an action it did not perform.
+- **A future backend implements `MyCronApi`** and is injected at bootstrap via
+  `<ApiProvider api={realApi}>`, replacing `EmptyApi` endpoint by endpoint.
+
+Validate the contract with `npm run typecheck` (`tsc --noEmit`).
+
 ## Repository status
 
 Seed: domain model (`CONTEXT.md`), architecture decisions (`docs/adr/0001~0003`), MVP
-design (`docs/design-control-plane-mvp.md`), and CTO implementation standard
-(`docs/product-implementation-spec.md`). No production runtime or PWA exists yet.
+design (`docs/design-control-plane-mvp.md`), CTO implementation standard
+(`docs/product-implementation-spec.md`), and the typecheck-only UI contract (`src/`) with its
+visual design handoff (`docs/design/mycron-handoff/`). No production runtime, backend, or PWA
+exists yet — scheduling, agent execution, persistence, auth, and integrations are
+intentionally out of scope for this pass.
 
 ## License
 
