@@ -1,6 +1,7 @@
 import { exitCodes } from "../../../packages/schema/src";
 import { previewArtifact } from "./artifact";
 import { errorEnvelope, okEnvelope } from "./envelopes";
+import { cronletLifecycle } from "./cronlet-lifecycle";
 import { openStore, projectFields, stableHash, type CronletRecord } from "./store";
 import type { CliEnv, CliResult, ParsedCommand } from "./types";
 
@@ -14,7 +15,7 @@ export function cronletCommand(parsed: ParsedCommand, env: CliEnv, command: stri
   if (parsed.verb === "list") {
     return listCronlets(parsed, env, command);
   }
-  return jsonError(command, env, "NOT_IMPLEMENTED", `Handler for '${command}' is not implemented yet.`, `mycron ${command} --help`, exitCodes.runtime);
+  return cronletLifecycle(parsed, env, command);
 }
 
 function createCronlet(parsed: ParsedCommand, env: CliEnv, command: string): CliResult {

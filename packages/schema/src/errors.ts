@@ -17,10 +17,11 @@ export type MyCronErrorCode =
   | "UNAUTHORIZED"
   | "NOT_FOUND"
   | "NOT_IMPLEMENTED"
-  | "WRONG_ARTIFACT_KIND";
+  | "WRONG_ARTIFACT_KIND"
+  | "INVALID_TRANSITION";
 
 export function exitCodeForError(code: MyCronErrorCode): ExitCode {
-  if (code === "CLIENT_REF_CONFLICT") {
+  if (code === "CLIENT_REF_CONFLICT" || code === "INVALID_TRANSITION") {
     return exitCodes.conflict;
   }
   if (code === "UNAUTHORIZED") {

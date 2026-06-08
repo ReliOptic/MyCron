@@ -25,13 +25,14 @@ export type ApprovalRecord = {
   reason: string | null;
 };
 
+export type RunRecord = { id: string; cronlet_id: string; retry_of: string | null; context_source: string; run_state: string; done_policy: unknown; evidence_ids: string[] };
 export type AuditEvent = { id: string; resource: string; action: string; target_id: string };
-export type StoreData = { cronlets: CronletRecord[]; approvals: ApprovalRecord[]; audit: AuditEvent[] };
+export type StoreData = { cronlets: CronletRecord[]; approvals: ApprovalRecord[]; runs: RunRecord[]; audit: AuditEvent[] };
 
 export type Store = {
   data: StoreData;
   save(): void;
-  nextId(prefix: "crn" | "apr" | "aud"): string;
+  nextId(prefix: "crn" | "apr" | "run" | "aud"): string;
 };
 
 export function openStore(env: CliEnv): Store {
@@ -62,9 +63,13 @@ function storePath(env: CliEnv): string {
 
 function readData(path: string): StoreData {
   if (!existsSync(path)) {
-    return { cronlets: [], approvals: [], audit: [] };
+    return { cronlets: [], approvals: [], runs: [], audit: [] };
   }
-  return JSON.parse(readFileSync(path, "utf8")) as StoreData;
+  return normalizeData(JSON.parse(readFileSync(path, "utf8")) as Partial<StoreData>);
+}
+
+function normalizeData(data: Partial<StoreData>): StoreData {
+  return { cronlets: data.cronlets ?? [], approvals: data.approvals ?? [], runs: data.runs ?? [], audit: data.audit ?? [] };
 }
 
 function writeData(path: string, data: StoreData): void {
@@ -73,7 +78,7 @@ function writeData(path: string, data: StoreData): void {
 }
 
 function nextNumber(data: StoreData, prefix: string): number {
-  const ids = [...data.cronlets, ...data.approvals, ...data.audit].map(item => item.id);
+  const ids = [...data.cronlets, ...data.approvals, ...data.runs, ...data.audit].map(item => item.id);
   return ids.filter(id => id.startsWith(`${prefix}_`)).length + 1;
 }
 
