@@ -1,5 +1,6 @@
 import { exitCodes } from "../../../packages/schema/src";
 import { commandFor, errorEnvelope, okEnvelope } from "./envelopes";
+import { getContractSchema, isSchemaKind, listSchemaIds } from "./schema-registry";
 import type { CliEnv, CliResult, ParsedCommand } from "./types";
 
 const knownResources = new Set([
@@ -23,6 +24,9 @@ export function executeJson(parsed: ParsedCommand, env: CliEnv): CliResult {
   if (parsed.resource === "config" && parsed.verb === "doctor") {
     return jsonOk(configDoctorEnvelope(command, env));
   }
+  if (parsed.resource === "schema") {
+    return schemaCommand(parsed, env, command);
+  }
   if (!parsed.resource || !knownResources.has(parsed.resource)) {
     return jsonError(command, env, "USAGE_ERROR", "Unknown MyCron resource.", "mycron --help", exitCodes.usage);
   }
@@ -41,6 +45,37 @@ export function executeJson(parsed: ParsedCommand, env: CliEnv): CliResult {
     exitCodes.runtime,
     { outcome: "not_implemented", resource: parsed.resource, verb: parsed.verb ?? null },
   );
+}
+
+function schemaCommand(parsed: ParsedCommand, env: CliEnv, command: string): CliResult {
+  const [, rawKind, operation, id] = parsed.args;
+  if (!rawKind || !isSchemaKind(rawKind) || (operation !== "list" && operation !== "get")) {
+    return jsonError(command, env, "USAGE_ERROR", "Use schema command|action|file list|get.", "mycron schema command list --json", exitCodes.usage);
+  }
+  const kind = rawKind;
+  if (operation === "list") {
+    const envelope = okEnvelope(command, env, {
+      outcome: "matched",
+      resource: "schema",
+      kind,
+      ids: listSchemaIds(kind),
+    }, `mycron schema ${kind} get <id> --json`);
+    return jsonOk(envelope);
+  }
+  if (!id) {
+    return jsonError(command, env, "USAGE_ERROR", "schema get requires an id.", `mycron schema ${kind} list --json`, exitCodes.usage);
+  }
+  const contract = getContractSchema(kind, id);
+  if (!contract) {
+    return jsonError(command, env, "NOT_FOUND", `${id} was not found in schema ${kind}.`, `mycron schema ${kind} list --json`, exitCodes.notFound);
+  }
+  const envelope = okEnvelope(command, env, {
+    outcome: "matched",
+    resource: "schema",
+    kind,
+    ...contract,
+  }, null);
+  return jsonOk(envelope);
 }
 
 function statusEnvelope(command: string, env: CliEnv) {

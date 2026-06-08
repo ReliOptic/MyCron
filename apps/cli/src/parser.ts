@@ -70,6 +70,9 @@ function commandPartCount(resource: string | null, verb: string | null): number 
   if (resource === "status") {
     return 1;
   }
+  if (resource === "schema") {
+    return 4;
+  }
   if (resource === "run" && verb === "evidence") {
     return 3;
   }
