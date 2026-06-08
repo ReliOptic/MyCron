@@ -14,11 +14,11 @@ This document is the handoff spec for that work.
 
 ## 1. Product definition
 
-**MyCron is a user-owned cross-agent control plane and harness for scheduled actions.**
+**MyCron is a user-owned multi-agent operations interface and harness for scheduled actions.**
 
 Host agents such as Hermes, Claude Code, Codex, or GPT register **Scheduled Actions** through an agent-first CLI/API. MyCron stores them as **Cronlets** under the user's Account, applies Policy, gates risky **external actions**, preserves Memory/Evidence boundaries, binds future runs to runtimes through **RuntimeBinding**, and verifies what actually happened.
 
-MyCron is not the model and not the agent brain. It is the operating harness around long-running agent work: memory, I/O, scheduling, orchestration, approval, evidence, verification, and audit.
+MyCron is not the model, not the agent brain, and not an app for embedding agents. It is the operating harness around long-running agent work: memory, I/O, scheduling, orchestration, approval, evidence, verification, and audit. Its core usability value appears when a user has many agents across many runtimes and needs one place to understand, approve, pause, retry, rebind, verify, and audit what they are doing.
 
 Short external line:
 

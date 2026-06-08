@@ -64,13 +64,16 @@ _Avoid_: tool, terminal app
 **Harness**:
 agent work 주변의 운영 계층. memory, I/O, scheduling, orchestration, approval, evidence,
 verification, audit을 포함한다. MyCron은 model provider나 agent brain이 아니라 scheduled
-agent work의 사용자 소유 harness다.
+agent work의 사용자 소유 multi-agent operations harness다. 여러 외부 agent가 만든 장기
+작업이 한 Account로 모이는 interface가 MyCron의 본질이다.
 _Avoid_: model, brain, marketplace
 
 **Agent**:
 의도를 해석하고 tools를 쓰며, 다른 agent와 협업하거나 memory/skills로 개선될 수 있는
 reasoning worker. MyCron에서는 대체로 외부 host agent이며, MyCron은 agent brain을 소유하지
-않고 origin/execution metadata와 통제 기록을 보존한다.
+않고 origin/execution metadata와 통제 기록을 보존한다. Agent를 MyCron 안에 만드는 것이
+아니라, 사용자가 관리하는 많은 외부 agent들의 scheduled work를 한 곳에서 운영하기 위해
+식별·관측한다.
 _Avoid_: internal bot, model
 
 **Runtime**:

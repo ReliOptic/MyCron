@@ -5,23 +5,25 @@
 
 ## 1. Product framing
 
-MyCron is the user-owned harness for scheduled agent work.
+MyCron is the user-owned multi-agent operations interface and harness for scheduled agent work.
 
-A model or agent is not enough by itself. Long-running delegated work needs an operating layer around it: memory, I/O, scheduling, orchestration, approval, evidence, verification, and audit. MyCron owns that operating layer for work that continues after the originating chat or coding session ends.
+A model or agent is not enough by itself. Useful AI work emerges when models and agents are wrapped in a harness: memory, I/O, scheduling, orchestration, approval, evidence, verification, and audit. MyCron owns that operating layer for work that continues after the originating chat or coding session ends.
 
-MyCron does **not** claim to own the model, the agent brain, or every execution environment. External agents and runtimes may do the reasoning and execution. MyCron makes that work durable, controllable, portable, and auditable under the user's Account.
+MyCron does **not** claim to own the model, the agent brain, or every execution environment. It is not an app for embedding agents. External agents and runtimes may do the reasoning and execution. MyCron is the user-owned interface where those agents converge, so the user can see, approve, pause, retry, rebind, verify, and audit the growing set of agent-scheduled work under one Account.
+
+The product value becomes clearer as a user accumulates more agents. A single agent can be managed inside its native tool. Many agents across many runtimes create operational sprawl: hidden schedules, unclear ownership, stale memory, risky sends, missing evidence, failed runs, duplicate work, and no shared audit trail. MyCron exists to make that multi-agent sprawl governable.
 
 Short form:
 
 ```text
-Agent = reasoning worker
+Agent = external reasoning worker
 Runtime = place/body where work runs
 RuntimeBinding = current execution binding
 Cronlet = durable scheduled work unit
 Memory = future context
 Evidence = past proof
 Verify = deterministic trust calculation
-MyCron = user-owned harness around the whole loop
+MyCron = user-owned multi-agent operations harness around the whole loop
 ```
 
 ## 2. Agent
@@ -30,6 +32,8 @@ An **Agent** is a reasoning worker that interprets intent, uses tools, may coord
 
 In MyCron, agents are usually external host agents such as a coding agent, local assistant, cloud agent host, or future physical/robotic agent controller. MyCron records agent origin and execution metadata, but does not pretend to own the agent brain.
 
+The purpose of tracking agents is not to build agents inside MyCron. The purpose is to help the user operate many external agents safely: which agent registered which Cronlet, which actions need approval, which runs failed, which evidence was produced, which runtime is currently bound, and which agent should be restricted, paused, or reconfigured.
+
 MVP boundary:
 
 - Agent is not a standalone registry feature yet.
@@ -37,6 +41,7 @@ MVP boundary:
 - No agent CRUD is in scope.
 - Agent labels may appear as Cronlet metadata.
 - Agent identity must not be treated as trusted input without validation.
+- Future Agent surfaces must be framed as multi-agent operations and governance, not agent creation.
 
 ## 3. Runtime
 

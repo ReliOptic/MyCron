@@ -54,7 +54,7 @@ MyCron is **not**:
 - a Zapier/IFTTT clone
 - a GenUI rendering layer (the earlier, now-archived direction)
 
-MyCron **is** the control and audit plane for agent-initiated background actions.
+MyCron **is** the user-owned multi-agent operations interface: the control and audit plane where many external agents' background actions converge.
 
 ---
 
@@ -82,7 +82,7 @@ Gate (external actions do not run until approved), **P3** an immutable Audit Log
 Defined in `CONTEXT.md`. In short:
 
 - **Host Agent** — external agent (Hermes, Claude, GPT) that decides and registers actions; owns execution and its LLM cost.
-- **Harness** — the operating layer around scheduled agent work: memory, I/O, scheduling, orchestration, approval, evidence, verification, and audit.
+- **Harness** — the operating layer around scheduled agent work: memory, I/O, scheduling, orchestration, approval, evidence, verification, and audit. MyCron is this harness for many external agents, not a place to embed/build the agents themselves.
 - **Runtime / RuntimeBinding** — the place where agent work runs, and the current Cronlet-to-runtime binding used for future runs.
 - **Scheduled Action** — "do X at time/condition Y", registered by an agent.
 - **Action Type** — `internal` (reversible: notify, brief) vs `external` (hard to reverse: payment, email_send, account_op).
