@@ -30,6 +30,8 @@ const memorySchema = z.object({
   client_ref: z.string().optional(),
   source: z.string().optional(),
   candidates: z.array(z.object({ client_ref: z.string() })).optional(),
+  domain: z.string().optional(),
+  type: z.string().optional(),
 });
 
 export const artifactSchema = z.union([cronletSchema, packSchema, memorySchema]);

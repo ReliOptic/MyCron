@@ -2,6 +2,7 @@ import { exitCodes } from "../../../packages/schema/src";
 import { approvalCommand } from "./approval-command";
 import { commandFor, errorEnvelope, okEnvelope } from "./envelopes";
 import { cronletCommand } from "./cronlet-command";
+import { memoryCommand } from "./memory-command";
 import { mygrationCommand } from "./mygration-command";
 import { packCommand } from "./pack-command";
 import { runCommand } from "./run-command";
@@ -43,6 +44,9 @@ export function executeJson(parsed: ParsedCommand, env: CliEnv): CliResult {
   }
   if (parsed.resource === "mygration") {
     return mygrationCommand(parsed, env, command);
+  }
+  if (parsed.resource === "memory") {
+    return memoryCommand(parsed, env, command);
   }
   if (!parsed.resource || !knownResources.has(parsed.resource)) {
     return jsonError(command, env, "USAGE_ERROR", "Unknown MyCron resource.", "mycron --help", exitCodes.usage);
