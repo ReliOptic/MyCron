@@ -28,6 +28,8 @@ const memorySchema = z.object({
   kind: z.union([z.literal("MemoryItem"), z.literal("MemoryMigration")]),
   content: z.string().optional(),
   client_ref: z.string().optional(),
+  source: z.string().optional(),
+  candidates: z.array(z.object({ client_ref: z.string() })).optional(),
 });
 
 export const artifactSchema = z.union([cronletSchema, packSchema, memorySchema]);
