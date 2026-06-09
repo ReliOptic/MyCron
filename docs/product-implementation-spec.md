@@ -36,8 +36,11 @@ CTO thesis:
 
 > MyCron’s moat is not that it has schedules. The moat is that agents can operate it with Google Workspace CLI-level speed, predictability, and read-back verification while the runtime preserves Calendar-grade consistency and Rust-grade reliability discipline.
 
+The Hermes Agent anatomy reference should be understood as a harness design lesson, not a clone target: Hermes improves without retraining the model by accumulating human-readable skills, memory, safe background reflection, and verification procedures. MyCron's analogous job is to make agent work improve through readable operating contracts: `.mc` Cronlets, memory artifacts, policies, safety rules, evidence, capability grants, and Done Policies.
+
 The Google Calendar / Google Workspace reference should be understood as an operational standard, not a clone target:
 
+- **Hermes anatomy standard:** memory, skill/process, evidence, policy, safety, and runtime binding should remain separate, inspectable layers; future-run improvements must not silently rewrite the contract of an already-running Run.
 - **GWS CLI standard:** agent commands should be fast, schema-driven, scriptable, JSON-readable, and easy to verify.
 - **Google Calendar standard:** schedule/time/recurrence objects should be stable, syncable, permissioned, and conflict-aware.
 - **Rust-grade standard:** critical runtime paths should be deterministic, memory-safe where appropriate, strongly typed, observable, and hard to corrupt through invalid state transitions.
@@ -58,12 +61,22 @@ MyCron can interoperate with schedulers, agents, messaging surfaces, and GenUI r
 
 ## 3. Core user and wedge
 
-The first strong user is the coding/agent ecosystem:
+The strongest wedge is **recurring agent-operated knowledge work**, not generic developer cron replacement.
 
-- OMC / OMX / Claude Code / Hermes / Codex users who already let agents schedule background work
-- vibe-coding prosumers accumulating cron-like agent jobs across tools
-- agent operators who need approval, cancellation, audit, and read-back across competing agents
-- teams where agents may touch external actions such as email sends, account operations, deployments, or payments
+Conventional developer scheduling already has mature tools:
+
+- data engineering pipelines use Airflow, Prefect, Dagster-like orchestrators;
+- backend/platform work uses Kubernetes CronJob, GitHub Actions schedules, native cron, and CI/CD tooling;
+- deployment platforms already expose build logs, rollbacks, domains, and preview status.
+
+MyCron should operate and verify agent work across those tools when they are present, not compete head-on with them.
+
+The first strong users are AI-heavy knowledge operators and agent operators who repeatedly delegate research, information gathering, summarization, monitoring, briefings, triage, and external-action drafts to agents:
+
+- founders, strategists, analysts, investors, marketers, SEO operators, PMs, consultants, and automation-heavy prosumers;
+- OMC / OMX / Claude Code / Hermes / Codex users who accumulate recurring agent jobs across tools;
+- teams where agents may touch external actions such as email sends, account operations, deployments, payments, or customer/workspace data;
+- agent operators who need approval, cancellation, audit, memory attachment, evidence, and read-back across competing agents.
 
 The wedge is:
 

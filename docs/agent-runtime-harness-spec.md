@@ -109,7 +109,9 @@ For MyCron, the harness includes:
 - immutable audit records
 - intent-confirming JSON envelopes
 
-This is the product center. MyCron should not become a generic agent marketplace, generic runner dashboard, or fake infrastructure console before the harness contract is reliable.
+This is the product center. Hermes Agent's skill architecture is the reference pattern: improvement should happen through readable operating instructions, pitfalls, and verification steps, not through hidden model-weight changes. MyCron's equivalent is readable operating contracts (`.mc`, memory artifacts, policy/safety artifacts, evidence, capability grants, and Done Policies) that improve future runs without silently rewriting the current run.
+
+MyCron should not become a generic agent marketplace, generic runner dashboard, or fake infrastructure console before the harness contract is reliable.
 
 ## 6. UI implications
 

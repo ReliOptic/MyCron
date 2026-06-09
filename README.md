@@ -30,6 +30,7 @@ Read these before asking Claude Code to scaffold implementation:
 
 - [`docs/product-implementation-spec.md`](docs/product-implementation-spec.md): latest CTO-level build direction for moving this docs-only seed repo toward a real MyCron runtime, CLI, and control surface.
 - [`docs/agent-runtime-harness-spec.md`](docs/agent-runtime-harness-spec.md): canonical Agent / Runtime / RuntimeBinding / Harness vocabulary and MVP boundary.
+- [`docs/hermes-anatomy-design-insights.md`](docs/hermes-anatomy-design-insights.md): what MyCron should learn from Hermes Agent's skill/memory/cron anatomy — readable operating contracts, next-run improvement, and safe reflection.
 - [`docs/strategy.md`](docs/strategy.md): ShareIdee portfolio/gateway strategy and current MyCron/Campsite/BALTAM boundary.
 - [`docs/adr/0003-agent-first-cli.md`](docs/adr/0003-agent-first-cli.md): current agent-first CLI ADR from the pivoted control-plane direction.
 - [`docs/adr/0004-cli-command-grammar.md`](docs/adr/0004-cli-command-grammar.md) + [`docs/mycron-cli-grammar.md`](docs/mycron-cli-grammar.md): canonical CLI command grammar (resource-scoped, `--json` output-only, `client_ref` idempotency, `--confirm` vs Approval Gate).
