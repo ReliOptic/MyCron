@@ -8,21 +8,101 @@ import type {
   Run,
   RunState,
   WeeklyReview,
+  ActorKind,
+  DomainEvent,
   AccountProfile,
 } from "@contract/types/mycron";
 import { deriveRequiredEvidence } from "@contract/data/hooks";
 
 const iso = (day: string, time: string) => `2026-06-${day}T${time}:00+09:00`;
 
+const actor = (kind: ActorKind, id: string | null) => ({ kind, id });
+
+function event(
+  id: string,
+  ts: string,
+  actorKind: ActorKind,
+  actorId: string | null,
+  resource: string,
+  action: string,
+  targetId: string,
+  outcome: string,
+  details?: Record<string, unknown>,
+): DomainEvent {
+  return {
+    id,
+    ts,
+    actor: actor(actorKind, actorId),
+    resource,
+    action,
+    target_id: targetId,
+    outcome,
+    details,
+  };
+}
+
 const policy = (states: RunState[]) => [
-  { id: "ran", label: "Process completes cleanly", detail: states[0] === "verified" ? "Agent exited 0 within the timeout window." : "Process did not finish cleanly before timeout.", state: states[0], required: true, producesEvidence: true },
-  { id: "sources", label: "All required sources reached", detail: states[1] === "verified" ? "Every declared source returned valid data." : "At least one declared source was partial or unreachable.", state: states[1], producesEvidence: true },
-  { id: "output", label: "Output artifact generated", detail: states[2] === "verified" ? "A non-empty file or message was produced and stored." : "The output exists but could not be proven complete.", state: states[2], producesEvidence: true },
-  { id: "evidence", label: "Evidence captured & linked", detail: states[3] === "verified" ? "Delivery receipts and artifact refs were recorded to the manifest." : "Manifest is missing one or more proof refs.", state: states[3], producesEvidence: true },
-  { id: "goal", label: "User goal confirmed", detail: states[4] === "verified" ? "Read-back confirmed goal satisfaction." : "Waiting for explicit read-back before counting as done.", state: states[4] },
+  {
+    id: "ran",
+    label: "Process completes cleanly",
+    detail:
+      states[0] === "verified"
+        ? "Agent exited 0 within the timeout window."
+        : "Process did not finish cleanly before timeout.",
+    state: states[0],
+    required: true,
+    producesEvidence: true,
+  },
+  {
+    id: "sources",
+    label: "All required sources reached",
+    detail:
+      states[1] === "verified"
+        ? "Every declared source returned valid data."
+        : "At least one declared source was partial or unreachable.",
+    state: states[1],
+    producesEvidence: true,
+  },
+  {
+    id: "output",
+    label: "Output artifact generated",
+    detail:
+      states[2] === "verified"
+        ? "A non-empty file or message was produced and stored."
+        : "The output exists but could not be proven complete.",
+    state: states[2],
+    producesEvidence: true,
+  },
+  {
+    id: "evidence",
+    label: "Evidence captured & linked",
+    detail:
+      states[3] === "verified"
+        ? "Delivery receipts and artifact refs were recorded to the manifest."
+        : "Manifest is missing one or more proof refs.",
+    state: states[3],
+    producesEvidence: true,
+  },
+  {
+    id: "goal",
+    label: "User goal confirmed",
+    detail:
+      states[4] === "verified"
+        ? "Read-back confirmed goal satisfaction."
+        : "Waiting for explicit read-back before counting as done.",
+    state: states[4],
+  },
 ];
 
-function run(id: string, state: RunState, summary: string, states: RunState[], errorType?: string, costLabel = "$0.04"): Run {
+function run(
+  id: string,
+  state: RunState,
+  summary: string,
+  states: RunState[],
+  errorType?: string,
+  costLabel = "$0.04",
+  runActor = actor("host_agent", "agent:safe"),
+): Run {
   return {
     id,
     state,
@@ -34,22 +114,121 @@ function run(id: string, state: RunState, summary: string, states: RunState[], e
     summary,
     donePolicy: policy(states),
     evidence: [
-      { type: "file", label: state === "failed" ? "snapshot-check.txt" : "summary.pdf", meta: state === "failed" ? "0 KB · timeout before write" : "182 KB · generated 09:01:04", ref: state === "failed" ? "missing" : "stored", warn: state === "failed" },
-      { type: "links", label: "Source manifest", meta: state === "unverified" ? "4 of 5 sources — 1 partial" : "5 of 5 sources reached", ref: state === "unverified" ? "partial" : "200 OK", warn: state === "unverified" },
-      { type: "deliver", label: "Delivery receipt", meta: "MyCron Inbox + Telegram", ref: state === "failed" ? "not sent" : "receipt ✓", warn: state === "failed" },
-      { type: "log", label: "Run log", meta: state === "failed" ? "84 lines · UpstreamTimeout" : "42 lines · 0 warnings", ref: "tail" },
+      {
+        type: "file",
+        label: state === "failed" ? "snapshot-check.txt" : "summary.pdf",
+        meta:
+          state === "failed"
+            ? "0 KB · timeout before write"
+            : "182 KB · generated 09:01:04",
+        ref: state === "failed" ? "missing" : "stored",
+        warn: state === "failed",
+        sourceRef: `evidence://${id}/output`,
+        hash: state === "failed" ? "sha256:unavailable" : "sha256:8f2a91",
+        capturedAt: iso("08", "09:01:04"),
+        provenance: state === "failed" ? "rejected" : "runtime_attested",
+      },
+      {
+        type: "links",
+        label: "Source manifest",
+        meta:
+          state === "unverified"
+            ? "4 of 5 sources — 1 partial"
+            : "5 of 5 sources reached",
+        ref: state === "unverified" ? "partial" : "200 OK",
+        warn: state === "unverified",
+        sourceRef: `evidence://${id}/sources`,
+        hash: state === "unverified" ? "sha256:partial" : "sha256:5c17ce",
+        capturedAt: iso("08", "09:01:03"),
+        provenance:
+          state === "unverified" ? "self_reported" : "runtime_attested",
+      },
+      {
+        type: "deliver",
+        label: "Delivery receipt",
+        meta: "MyCron Inbox + Telegram",
+        ref: state === "failed" ? "not sent" : "receipt ✓",
+        warn: state === "failed",
+        sourceRef: `evidence://${id}/delivery`,
+        hash: state === "failed" ? "sha256:unavailable" : "sha256:71b5de",
+        capturedAt: iso("08", "09:01:05"),
+        provenance: state === "failed" ? "rejected" : "verified",
+      },
+      {
+        type: "log",
+        label: "Run log",
+        meta:
+          state === "failed"
+            ? "84 lines · UpstreamTimeout"
+            : "42 lines · 0 warnings",
+        ref: "tail",
+        sourceRef: `evidence://${id}/log`,
+        hash: "sha256:9f3a21",
+        capturedAt: iso("08", "09:01:05"),
+        provenance: "runtime_attested",
+      },
     ],
+    actor: runActor,
+    provenanceEvent: event(
+      `aud_${id}`,
+      iso("08", "09:01:05"),
+      runActor.kind,
+      runActor.id,
+      "run",
+      state === "verified" ? "verify" : "complete",
+      id,
+      state,
+    ),
     readbackCommand: `mycron verify ${id} --evidence`,
     costLabel,
   };
 }
+
+const provenanceFor = (
+  targetId: string,
+  origin: string,
+  editor = "claude-code",
+) => ({
+  createdEvent: event(
+    `aud_${targetId}_created`,
+    iso("01", "08:00"),
+    "user",
+    "user:jiho",
+    "cronlet",
+    "create",
+    targetId,
+    "staged",
+    { origin },
+  ),
+  lastEditedEvent: event(
+    `aud_${targetId}_edited`,
+    iso("07", "18:12"),
+    "host_agent",
+    `host_agent:${editor}`,
+    "cronlet",
+    "update",
+    targetId,
+    "accepted",
+  ),
+  approvalEvent: event(
+    `aud_${targetId}_approval`,
+    iso("07", "18:20"),
+    "user",
+    "user:jiho",
+    "approval",
+    "approve",
+    targetId,
+    "approved",
+  ),
+});
 
 const cronletsSeed: Cronlet[] = [
   {
     id: "cl_backup",
     name: "Backup Health Check",
     icon: "shield",
-    intent: "Probe storage backends and verify last snapshot is recent and restorable.",
+    intent:
+      "Probe storage backends and verify last snapshot is recent and restorable.",
     binding: { agent: "SafeAgent", runtime: "K8s CronJob" },
     scheduleLabel: "Daily · 10:30",
     cron: "30 10 * * *",
@@ -58,16 +237,34 @@ const cronletsSeed: Cronlet[] = [
     lastRunLabel: "Today · 10:30 KST",
     lastSuccessLabel: "2 days ago · Jun 6, 10:30",
     state: "failed",
-    health: ["verified", "verified", "failed", "verified", "stale", "verified", "failed"],
+    health: [
+      "verified",
+      "verified",
+      "failed",
+      "verified",
+      "stale",
+      "verified",
+      "failed",
+    ],
     verifiedRate: 0.61,
     costLabel: "$0.12",
-    latestRun: run("run_e09a7f3", "failed", "Storage health endpoint did not respond within 30s. No snapshot verified today.", ["failed", "failed", "failed", "failed", "unverified"], "UpstreamTimeout", "$0.02"),
+    ...provenanceFor("cl_backup", "Telegram request"),
+    latestRun: run(
+      "run_e09a7f3",
+      "failed",
+      "Storage health endpoint did not respond within 30s. No snapshot verified today.",
+      ["failed", "failed", "failed", "failed", "unverified"],
+      "UpstreamTimeout",
+      "$0.02",
+      actor("host_agent", "host_agent:safeagent"),
+    ),
   },
   {
     id: "cl_repo",
     name: "Weekly Repo Digest",
     icon: "git",
-    intent: "Compile merged PRs, new issues and contributor stats into a weekly digest.",
+    intent:
+      "Compile merged PRs, new issues and contributor stats into a weekly digest.",
     binding: { agent: "RepoAgent", runtime: "GitHub Actions" },
     scheduleLabel: "Mondays · 09:00",
     cron: "0 9 * * 1",
@@ -79,13 +276,23 @@ const cronletsSeed: Cronlet[] = [
     health: ["verified", null, null, null, null, null, null],
     verifiedRate: 0.33,
     costLabel: "$0.03",
-    latestRun: run("run_a1b88c0", "stale", "The schedule did not fire on the expected Monday interval.", ["verified", "verified", "verified", "verified", "stale"], undefined, "$0.01"),
+    ...provenanceFor("cl_repo", "GitHub request", "repoagent"),
+    latestRun: run(
+      "run_a1b88c0",
+      "stale",
+      "The schedule did not fire on the expected Monday interval.",
+      ["verified", "verified", "verified", "verified", "stale"],
+      undefined,
+      "$0.01",
+      actor("host_agent", "host_agent:repoagent"),
+    ),
   },
   {
     id: "cl_oss",
     name: "OSS Trend Watch",
     icon: "git",
-    intent: "Scan tracked repositories and release feeds, surface notable adoption shifts.",
+    intent:
+      "Scan tracked repositories and release feeds, surface notable adoption shifts.",
     binding: { agent: "ResearchAgent", runtime: "Hermes Cloud" },
     scheduleLabel: "Daily · 14:00",
     cron: "0 14 * * *",
@@ -93,16 +300,34 @@ const cronletsSeed: Cronlet[] = [
     nextRunLabel: "Tomorrow · 14:00 KST",
     lastRunLabel: "Today · 14:00 KST",
     state: "unverified",
-    health: ["verified", "verified", "unverified", "verified", "verified", "unverified", "verified"],
+    health: [
+      "verified",
+      "verified",
+      "unverified",
+      "verified",
+      "verified",
+      "unverified",
+      "verified",
+    ],
     verifiedRate: 0.71,
     costLabel: "$0.08",
-    latestRun: run("run_b710d4e", "unverified", "Run completed, but one upstream feed returned partial responses so the trend summary remains unproven.", ["verified", "unverified", "verified", "verified", "unverified"], undefined, "$0.05"),
+    ...provenanceFor("cl_oss", "Hermes request", "researchagent"),
+    latestRun: run(
+      "run_b710d4e",
+      "unverified",
+      "Run completed, but one upstream feed returned partial responses so the trend summary remains unproven.",
+      ["verified", "unverified", "verified", "verified", "unverified"],
+      undefined,
+      "$0.05",
+      actor("host_agent", "host_agent:researchagent"),
+    ),
   },
   {
     id: "cl_portfolio",
     name: "Daily Portfolio Brief",
     icon: "trend",
-    intent: "Summarize overnight market moves and reconcile portfolio drift before the open.",
+    intent:
+      "Summarize overnight market moves and reconcile portfolio drift before the open.",
     binding: { agent: "FinAgent", runtime: "Hermes Cloud" },
     scheduleLabel: "Every weekday · 09:00",
     cron: "0 9 * * 1-5",
@@ -110,16 +335,34 @@ const cronletsSeed: Cronlet[] = [
     nextRunLabel: "Tomorrow · 09:00 KST",
     lastRunLabel: "Today · 09:01 KST",
     state: "verified",
-    health: ["verified", "verified", "verified", "verified", "verified", "stale", "verified"],
+    health: [
+      "verified",
+      "verified",
+      "verified",
+      "verified",
+      "verified",
+      "stale",
+      "verified",
+    ],
     verifiedRate: 0.92,
     costLabel: "$0.09",
-    latestRun: run("run_8f2a91c", "verified", "Indices closed mixed; portfolio drift +0.4% vs target. Brief delivered with source refs.", ["verified", "verified", "verified", "verified", "verified"], undefined, "$0.04"),
+    ...provenanceFor("cl_portfolio", "CLI create", "finagent"),
+    latestRun: run(
+      "run_8f2a91c",
+      "verified",
+      "Indices closed mixed; portfolio drift +0.4% vs target. Brief delivered with source refs.",
+      ["verified", "verified", "verified", "verified", "verified"],
+      undefined,
+      "$0.04",
+      actor("host_agent", "host_agent:finagent"),
+    ),
   },
   {
     id: "cl_planning",
     name: "Morning Planning Reminder",
     icon: "sparkle",
-    intent: "Assemble today's priorities from Obsidian + calendar and send a short agenda.",
+    intent:
+      "Assemble today's priorities from Obsidian + calendar and send a short agenda.",
     binding: { agent: "FocusAgent", runtime: "Local runner" },
     scheduleLabel: "Every weekday · 08:00",
     cron: "0 8 * * 1-5",
@@ -127,16 +370,34 @@ const cronletsSeed: Cronlet[] = [
     nextRunLabel: "Tomorrow · 08:00 KST",
     lastRunLabel: "Today · 08:00 KST",
     state: "verified",
-    health: ["verified", "verified", "verified", "verified", "verified", "verified", "verified"],
+    health: [
+      "verified",
+      "verified",
+      "verified",
+      "verified",
+      "verified",
+      "verified",
+      "verified",
+    ],
     verifiedRate: 1,
     costLabel: "$0.04",
-    latestRun: run("run_3c5e120", "verified", "Agenda assembled from calendar, task notes and today's pinned priorities.", ["verified", "verified", "verified", "verified", "verified"], undefined, "$0.01"),
+    ...provenanceFor("cl_planning", "Obsidian request", "focusagent"),
+    latestRun: run(
+      "run_3c5e120",
+      "verified",
+      "Agenda assembled from calendar, task notes and today's pinned priorities.",
+      ["verified", "verified", "verified", "verified", "verified"],
+      undefined,
+      "$0.01",
+      actor("host_agent", "host_agent:focusagent"),
+    ),
   },
   {
     id: "cl_inbox",
     name: "Inbox Triage",
     icon: "inbox",
-    intent: "Classify new mail, draft replies for routine threads, flag anything needing human review.",
+    intent:
+      "Classify new mail, stage replies for recurring threads, flag anything needing human review.",
     binding: { agent: "MailAgent", runtime: "Hermes Cloud" },
     scheduleLabel: "Daily · 15:00",
     cron: "0 15 * * *",
@@ -144,47 +405,125 @@ const cronletsSeed: Cronlet[] = [
     nextRunLabel: "In 38 min · 15:00 KST",
     lastRunLabel: "Today · 14:00 KST",
     state: "verified",
-    health: ["verified", "verified", "verified", "stale", "verified", "verified", "verified"],
+    health: [
+      "verified",
+      "verified",
+      "verified",
+      "stale",
+      "verified",
+      "verified",
+      "verified",
+    ],
     verifiedRate: 0.86,
     costLabel: "$0.05",
-    latestRun: run("run_55c1aa2", "verified", "12 messages classified; 3 replies drafted; one investor thread flagged for review.", ["verified", "verified", "verified", "verified", "verified"], undefined, "$0.03"),
+    ...provenanceFor("cl_inbox", "Email request", "mailagent"),
+    latestRun: run(
+      "run_55c1aa2",
+      "verified",
+      "12 messages classified; 3 replies staged; one investor thread flagged for review.",
+      ["verified", "verified", "verified", "verified", "verified"],
+      undefined,
+      "$0.03",
+      actor("host_agent", "host_agent:mailagent"),
+    ),
   },
 ];
 
 const inboxSeed: InboxRequest[] = [
-  { id: "in_staging", text: "every morning check if my staging deploy is healthy and tell me", source: "Claude Code", capturedLabel: "2h ago" },
-  { id: "in_pricing", text: "weekly, summarize what changed in the competitor pricing pages", source: "Telegram", capturedLabel: "1d ago" },
-  { id: "in_oncall", text: "remind me to review the on-call rotation before each Monday", source: "Obsidian", capturedLabel: "3d ago" },
+  {
+    id: "in_staging",
+    text: "every morning check if my staging deploy is healthy and tell me",
+    source: "Claude Code",
+    capturedLabel: "2h ago",
+  },
+  {
+    id: "in_pricing",
+    text: "weekly, summarize what changed in the competitor pricing pages",
+    source: "Telegram",
+    capturedLabel: "1d ago",
+  },
+  {
+    id: "in_oncall",
+    text: "remind me to review the on-call rotation before each Monday",
+    source: "Obsidian",
+    capturedLabel: "3d ago",
+  },
 ];
 
 export class SeededDemoApi implements MyCronApi {
   private cronlets = structuredClone(cronletsSeed) as Cronlet[];
   private inbox = structuredClone(inboxSeed) as InboxRequest[];
   private alerts: AlertPreference[] = [
-    { key: "failure", label: "Failure alerts", detail: "Notify the moment a run fails verification.", enabled: true },
-    { key: "stale", label: "Stale drift warnings", detail: "Flag routines that silently stop firing on schedule.", enabled: true },
-    { key: "review", label: "Weekly review digest", detail: "One honest read every Monday at 09:00.", enabled: true },
-    { key: "completion", label: "Run completion summaries", detail: "A receipt when verified runs finish.", enabled: false },
+    {
+      key: "failure",
+      label: "Failure alerts",
+      detail: "Notify the moment a run fails verification.",
+      enabled: true,
+    },
+    {
+      key: "stale",
+      label: "Stale drift warnings",
+      detail: "Flag Cronlets that silently stop firing on schedule.",
+      enabled: true,
+    },
+    {
+      key: "review",
+      label: "Weekly review digest",
+      detail: "One honest read every Monday at 09:00.",
+      enabled: true,
+    },
+    {
+      key: "completion",
+      label: "Run completion summaries",
+      detail: "A receipt when verified runs finish.",
+      enabled: false,
+    },
   ];
 
-  async listCronlets() { return this.cronlets; }
+  async listCronlets() {
+    return this.cronlets;
+  }
   async getCronlet(id: string) {
     const found = this.cronlets.find((c) => c.id === id);
     if (!found) throw new Error(`No demo cronlet ${id}`);
     return found;
   }
-  async listRuns(cronletId: string) { return { runs: [(await this.getCronlet(cronletId)).latestRun] }; }
-  async runNow(cronletId: string) { return { runId: (await this.getCronlet(cronletId)).latestRun.id }; }
-  async pause() { return; }
-  async resume() { return; }
-  async retryRun(runId: string) { return { runId: `${runId}_retry` }; }
-  async rearmSchedule() { return; }
-  async escalate() { return; }
-  async verifyRun() { return; }
+  async listRuns(cronletId: string) {
+    return { runs: [(await this.getCronlet(cronletId)).latestRun] };
+  }
+  async runNow(cronletId: string) {
+    return { runId: (await this.getCronlet(cronletId)).latestRun.id };
+  }
+  async pause() {
+    return;
+  }
+  async resume() {
+    return;
+  }
+  async retryRun(runId: string) {
+    return { runId: `${runId}_retry` };
+  }
+  async rearmSchedule() {
+    return;
+  }
+  async notify() {
+    return;
+  }
+  async verifyRun() {
+    return;
+  }
   async createCronlet(draft: CronletDraft) {
-    const newRun = run(`run_${Math.random().toString(16).slice(2, 9)}`, "unverified", "Created in demo mode. The next run has not produced proof yet.", ["unverified", "unverified", "unverified", "unverified", "unverified"], undefined, "$0.00");
+    const cronletId = `cl_${Date.now()}`;
+    const newRun = run(
+      `run_${Math.random().toString(16).slice(2, 9)}`,
+      "unverified",
+      "Created in demo mode. The next run has not produced proof yet.",
+      ["unverified", "unverified", "unverified", "unverified", "unverified"],
+      undefined,
+      "$0.00",
+    );
     const cronlet: Cronlet = {
-      id: `cl_${Date.now()}`,
+      id: cronletId,
       name: draft.name || "Untitled Cronlet",
       icon: "sparkle",
       intent: draft.intent || "No intent supplied yet.",
@@ -198,6 +537,7 @@ export class SeededDemoApi implements MyCronApi {
       health: [null, null, null, null, null, null, null],
       verifiedRate: 0,
       costLabel: "$0.00",
+      ...provenanceFor(cronletId, "Builder staged input", "demo"),
       latestRun: newRun,
     };
     this.cronlets = [cronlet, ...this.cronlets];
@@ -205,22 +545,45 @@ export class SeededDemoApi implements MyCronApi {
   }
   async updateCronlet(id: string, draft: Partial<CronletDraft>) {
     const c = await this.getCronlet(id);
-    Object.assign(c, { name: draft.name ?? c.name, intent: draft.intent ?? c.intent });
+    Object.assign(c, {
+      name: draft.name ?? c.name,
+      intent: draft.intent ?? c.intent,
+    });
     return c;
   }
   async previewSchedule(_cron: string, timezone: string, count: number) {
-    return Array.from({ length: count }, (_, i) => `Mon Jun ${9 + i} · 08:00 · ${timezone}`);
+    return Array.from(
+      { length: count },
+      (_, i) => `Mon Jun ${9 + i} · 08:00 · ${timezone}`,
+    );
   }
-  async listInbox() { return this.inbox; }
-  async dismissInbox(id: string) { this.inbox = this.inbox.filter((x) => x.id !== id); }
+  async listInbox() {
+    return this.inbox;
+  }
+  async dismissInbox(id: string) {
+    this.inbox = this.inbox.filter((x) => x.id !== id);
+  }
   async promoteInbox(id: string) {
     const req = this.inbox.find((x) => x.id === id);
     if (!req) throw new Error(`No inbox request ${id}`);
-    const scheduleLabel = req.id === "in_pricing" ? "Mondays · 09:00" : "Every weekday · 08:00";
-    const cron = scheduleLabel.startsWith("Mondays") ? "0 9 * * 1" : "0 8 * * 1-5";
-    const donePolicy = { ran: true, sources: true, output: true, evidence: true, goal: false, noDrift: false };
+    const scheduleLabel =
+      req.id === "in_pricing" ? "Mondays · 09:00" : "Every weekday · 08:00";
+    const cron = scheduleLabel.startsWith("Mondays")
+      ? "0 9 * * 1"
+      : "0 8 * * 1-5";
+    const donePolicy = {
+      ran: true,
+      sources: true,
+      output: true,
+      evidence: true,
+      goal: false,
+      noDrift: false,
+    };
     return {
-      name: req.id === "in_staging" ? "Staging Deploy Watch" : req.text.split(",")[0] || "New Cronlet",
+      name:
+        req.id === "in_staging"
+          ? "Staging Deploy Watch"
+          : req.text.split(",")[0] || "New Cronlet",
       intent: req.text,
       scheduleLabel,
       cron,
@@ -243,21 +606,78 @@ export class SeededDemoApi implements MyCronApi {
       unverified: 3,
       costLabel: "$0.41",
       suggestions: [
-        { id: "fix_backup", state: "failed", iconKey: "alert", title: "Backup Health Check failed twice", body: "Both failures were UpstreamTimeout. Add a 2× retry with backoff and auto-escalate if still failing.", actionLabel: "Apply fix", cronletId: "cl_backup" },
-        { id: "fix_oss", state: "unverified", iconKey: "shield", title: "OSS Trend Watch can't prove completion", body: "github-trending returns partial responses in ~25% of runs. Mark optional or require it with a retry.", actionLabel: "Edit policy", cronletId: "cl_oss" },
-        { id: "fix_repo", state: "stale", iconKey: "clock", title: "Weekly Repo Digest stopped firing 9 days ago", body: "The GitHub Actions trigger drifted with no error. Re-arm the schedule and enable silent-drift detection.", actionLabel: "Re-arm", cronletId: "cl_repo" },
+        {
+          id: "fix_backup",
+          state: "failed",
+          iconKey: "alert",
+          title: "Backup Health Check failed twice",
+          body: "Both failures were UpstreamTimeout. Add a 2× retry with backoff and notify the operator if still failing.",
+          actionLabel: "Apply fix",
+          cronletId: "cl_backup",
+        },
+        {
+          id: "fix_oss",
+          state: "unverified",
+          iconKey: "shield",
+          title: "OSS Trend Watch can't prove completion",
+          body: "github-trending returns partial responses in ~25% of runs. Mark optional or require it with a retry.",
+          actionLabel: "Edit policy",
+          cronletId: "cl_oss",
+        },
+        {
+          id: "fix_repo",
+          state: "stale",
+          iconKey: "clock",
+          title: "Weekly Repo Digest stopped firing 9 days ago",
+          body: "The GitHub Actions trigger drifted with no error. Re-arm the schedule and enable silent-drift detection.",
+          actionLabel: "Re-arm",
+          cronletId: "cl_repo",
+        },
       ],
       corrections: [
-        { id: "corr_portfolio", title: "Confirmed Portfolio Brief output", detail: "Tue · marked goal satisfied", state: "verified" },
-        { id: "corr_backup", title: "Re-ran Backup Health Check manually", detail: "Wed · escalated to on-call", state: "failed" },
+        {
+          id: "corr_portfolio",
+          title: "Confirmed Portfolio Brief output",
+          detail: "Tue · marked goal satisfied",
+          state: "verified",
+        },
+        {
+          id: "corr_backup",
+          title: "Re-ran Backup Health Check manually",
+          detail: "Wed · notified on-call",
+          state: "failed",
+        },
       ],
     };
   }
-  async applySuggestion() { return; }
-  async getAccount(): Promise<AccountProfile> { return { id: "acct_demo", name: "Jiho Kang", email: "jiho@hermes.dev", plan: "PRO", avatarInitials: "JK" }; }
-  async getComputeBudget(): Promise<ComputeBudget> { return { usedLabel: "$12.40", limitLabel: "$50", usedFraction: 0.25, routines: this.cronlets.length, runsPerWeek: 24, renewsLabel: "Jul 1" }; }
-  async getAlertPreferences(): Promise<AlertPreference[]> { return this.alerts; }
+  async applySuggestion() {
+    return;
+  }
+  async getAccount(): Promise<AccountProfile> {
+    return {
+      id: "acct_demo",
+      name: "Jiho Kang",
+      email: "jiho@hermes.dev",
+      plan: "PRO",
+      avatarInitials: "JK",
+    };
+  }
+  async getComputeBudget(): Promise<ComputeBudget> {
+    return {
+      usedLabel: "$12.40",
+      limitLabel: "$50",
+      usedFraction: 0.25,
+      cronlets: this.cronlets.length,
+      runsPerWeek: 24,
+      renewsLabel: "Jul 1",
+    };
+  }
+  async getAlertPreferences(): Promise<AlertPreference[]> {
+    return this.alerts;
+  }
   async setAlertPreference(key: string, enabled: boolean) {
-    this.alerts = this.alerts.map((a) => a.key === key ? { ...a, enabled } : a);
+    this.alerts = this.alerts.map((a) =>
+      a.key === key ? { ...a, enabled } : a,
+    );
   }
 }

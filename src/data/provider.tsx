@@ -22,7 +22,7 @@ export class NotImplementedError extends Error {
   constructor(method: string) {
     super(
       `MyCronApi.${method} is not implemented (no backend wired). ` +
-        `Inject a real MyCronApi via <ApiProvider api={...}> before invoking writes.`
+        `Inject a real MyCronApi via <ApiProvider api={...}> before invoking writes.`,
     );
     this.name = "NotImplementedError";
     this.method = method;
@@ -75,8 +75,8 @@ export const EmptyApi: MyCronApi = {
   rearmSchedule: async () => {
     throw new NotImplementedError("rearmSchedule");
   },
-  escalate: async () => {
-    throw new NotImplementedError("escalate");
+  notify: async () => {
+    throw new NotImplementedError("notify");
   },
   verifyRun: async () => {
     throw new NotImplementedError("verifyRun");

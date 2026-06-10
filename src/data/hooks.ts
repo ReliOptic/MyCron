@@ -71,8 +71,9 @@ export function useCronlets(): Async<Cronlet[]> {
 export function useCronlet(id: string | null): Async<Cronlet> {
   const api = useApi();
   return useAsync(
-    () => (id ? api.getCronlet(id) : Promise.resolve(null as unknown as Cronlet)),
-    [api, id]
+    () =>
+      id ? api.getCronlet(id) : Promise.resolve(null as unknown as Cronlet),
+    [api, id],
   );
 }
 
@@ -80,7 +81,7 @@ export function useRunHistory(cronletId: string | null): Async<Run[]> {
   const api = useApi();
   return useAsync(
     async () => (cronletId ? (await api.listRuns(cronletId)).runs : []),
-    [api, cronletId]
+    [api, cronletId],
   );
 }
 
@@ -118,10 +119,11 @@ export function useCronletActions() {
     resume: (id: string) => api.resume(id),
     retryRun: (runId: string) => api.retryRun(runId),
     rearm: (id: string) => api.rearmSchedule(id),
-    escalate: (runId: string, note?: string) => api.escalate(runId, note),
+    notify: (runId: string, note?: string) => api.notify(runId, note),
     confirm: (runId: string) => api.verifyRun(runId),
     create: (draft: CronletDraft) => api.createCronlet(draft),
-    update: (id: string, draft: Partial<CronletDraft>) => api.updateCronlet(id, draft),
+    update: (id: string, draft: Partial<CronletDraft>) =>
+      api.updateCronlet(id, draft),
     previewSchedule: (cron: string, tz: string, count = 4) =>
       api.previewSchedule(cron, tz, count),
     promoteInbox: (id: string) => api.promoteInbox(id),
@@ -140,12 +142,20 @@ export function useCronletActions() {
 export function countByState(cronlets: Cronlet[]): Record<string, number> {
   return cronlets.reduce(
     (acc, c) => ((acc[c.state] = (acc[c.state] ?? 0) + 1), acc),
-    { verified: 0, failed: 0, stale: 0, unverified: 0 } as Record<string, number>
+    { verified: 0, failed: 0, stale: 0, unverified: 0 } as Record<
+      string,
+      number
+    >,
   );
 }
 
 /** Sort so problems surface first: failed → stale → unverified → verified. */
-export const STATE_ORDER = ["failed", "stale", "unverified", "verified"] as const;
+export const STATE_ORDER = [
+  "failed",
+  "stale",
+  "unverified",
+  "verified",
+] as const;
 export function byTriagePriority(a: Cronlet, b: Cronlet): number {
   return STATE_ORDER.indexOf(a.state) - STATE_ORDER.indexOf(b.state);
 }
