@@ -180,7 +180,7 @@ export class SeededDemoApi implements MyCronApi {
   async retryRun(runId: string) { return { runId: `${runId}_retry` }; }
   async rearmSchedule() { return; }
   async escalate() { return; }
-  async confirmRun() { return; }
+  async verifyRun() { return; }
   async createCronlet(draft: CronletDraft) {
     const newRun = run(`run_${Math.random().toString(16).slice(2, 9)}`, "unverified", "Created in demo mode. The next run has not produced proof yet.", ["unverified", "unverified", "unverified", "unverified", "unverified"], undefined, "$0.00");
     const cronlet: Cronlet = {
