@@ -46,6 +46,23 @@ export type EvidenceProvenance =
   | "verified"
   | "rejected";
 
+export type ActionType = "internal" | "external";
+
+export type RuntimeTarget =
+  | "hermes"
+  | "github-actions"
+  | "local-runner"
+  | "k8s-cronjob";
+
+export interface RuntimeOption {
+  target: RuntimeTarget;
+  label: string;
+  actor: string;
+  runtime: string;
+  originAgent: string;
+  requiredCapabilities: string[];
+}
+
 export interface DomainEvent {
   id: string;
   ts: string;
@@ -111,6 +128,7 @@ export interface AgentBinding {
 export interface Cronlet {
   id: string;
   name: string;
+  action_type: ActionType;
   /** Icon key resolved by the host's icon set (see ICON_KEYS in design tokens). */
   icon: string;
   /** Plain-language description of what the Cronlet should accomplish. */
@@ -152,6 +170,14 @@ export interface InboxRequest {
   source: string;
   /** Relative capture time, e.g. "2h ago". */
   capturedLabel: string;
+  parsedContract: {
+    scheduleLabel: string;
+    actor: string;
+    runtime: string;
+    action_type: ActionType;
+    evidence: EvidenceType[];
+    approvalRequired: boolean;
+  };
 }
 
 /** Weekly Review roll-up. All values are facts, never vanity metrics. */
@@ -215,7 +241,7 @@ export interface AlertPreference {
 }
 
 // ---- Builder staged input (create/edit flow) ----
-export interface DonePolicyDraft {
+export interface DonePolicyStagedInput {
   ran: boolean; // required: process completes cleanly
   sources: boolean; // all required sources reached
   output: boolean; // output artifact generated
@@ -224,15 +250,21 @@ export interface DonePolicyDraft {
   noDrift: boolean; // no silent schedule drift
 }
 
-export interface CronletDraft {
+export interface CronletStagedInput {
   name: string;
   intent: string;
   scheduleLabel: string;
   cron: string;
   timezone: string;
-  agent: string;
+  actor: string;
+  runtimeTarget: RuntimeTarget | "";
+  runtimeLabel: string;
+  originAgent: string;
+  action_type: ActionType;
+  client_ref: string;
+  requiredCapabilities: string[];
   deliverTo: string; // "MyCron Inbox + Telegram"
-  donePolicy: DonePolicyDraft;
+  donePolicy: DonePolicyStagedInput;
   /** Derived from donePolicy; not user-set directly. */
   requiredEvidence: EvidenceType[];
   /** Set when promoted from an InboxRequest. */

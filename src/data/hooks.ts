@@ -15,8 +15,8 @@ import type {
   Run,
   InboxRequest,
   WeeklyReview,
-  CronletDraft,
-  DonePolicyDraft,
+  CronletStagedInput,
+  DonePolicyStagedInput,
   EvidenceType,
   AccountProfile,
   ComputeBudget,
@@ -121,9 +121,9 @@ export function useCronletActions() {
     rearm: (id: string) => api.rearmSchedule(id),
     notify: (runId: string, note?: string) => api.notify(runId, note),
     confirm: (runId: string) => api.verifyRun(runId),
-    create: (draft: CronletDraft) => api.createCronlet(draft),
-    update: (id: string, draft: Partial<CronletDraft>) =>
-      api.updateCronlet(id, draft),
+    create: (input: CronletStagedInput) => api.createCronlet(input),
+    update: (id: string, input: Partial<CronletStagedInput>) =>
+      api.updateCronlet(id, input),
     previewSchedule: (cron: string, tz: string, count = 4) =>
       api.previewSchedule(cron, tz, count),
     promoteInbox: (id: string) => api.promoteInbox(id),
@@ -160,8 +160,8 @@ export function byTriagePriority(a: Cronlet, b: Cronlet): number {
   return STATE_ORDER.indexOf(a.state) - STATE_ORDER.indexOf(b.state);
 }
 
-/** Derive required evidence artifacts from a Done Policy draft. */
-export function deriveRequiredEvidence(p: DonePolicyDraft): EvidenceType[] {
+/** Derive required evidence artifacts from a Done Policy staged input. */
+export function deriveRequiredEvidence(p: DonePolicyStagedInput): EvidenceType[] {
   const out: EvidenceType[] = [];
   if (p.output) out.push("file");
   if (p.sources) out.push("links");

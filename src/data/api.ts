@@ -12,7 +12,7 @@ import type {
   Run,
   InboxRequest,
   WeeklyReview,
-  CronletDraft,
+  CronletStagedInput,
   AccountProfile,
   ComputeBudget,
   AlertPreference,
@@ -41,8 +41,8 @@ export interface MyCronApi {
   verifyRun(runId: string): Promise<void>;
 
   // ---- builder ----
-  createCronlet(draft: CronletDraft): Promise<Cronlet>;
-  updateCronlet(id: string, draft: Partial<CronletDraft>): Promise<Cronlet>;
+  createCronlet(input: CronletStagedInput): Promise<Cronlet>;
+  updateCronlet(id: string, input: Partial<CronletStagedInput>): Promise<Cronlet>;
   /** Server-side cron preview: next N fire times for a cron+tz. */
   previewSchedule(
     cron: string,
@@ -53,8 +53,8 @@ export interface MyCronApi {
   // ---- inbox ----
   listInbox(): Promise<InboxRequest[]>;
   dismissInbox(id: string): Promise<void>;
-  /** Promote a raw request into a pre-filled draft (server may use an LLM). */
-  promoteInbox(id: string): Promise<CronletDraft>;
+  /** Promote a raw request into a pre-filled staged input (server may use an LLM). */
+  promoteInbox(id: string): Promise<CronletStagedInput>;
 
   // ---- weekly review ----
   getWeeklyReview(rangeStart?: string): Promise<WeeklyReview>;

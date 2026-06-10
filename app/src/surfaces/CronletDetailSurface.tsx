@@ -341,7 +341,7 @@ function ConfirmationDrawer({
         {tc("detail.confirmCost", { cost: c.latestRun.costLabel ?? "—" })}
       </p>
       <p className="muted">
-        {action === "notify"
+        {c.action_type === "external"
           ? tc("detail.confirmApproval")
           : tc("detail.confirmDemo")}
       </p>

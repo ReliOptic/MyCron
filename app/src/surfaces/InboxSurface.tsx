@@ -1,7 +1,7 @@
 import { useNavigate } from "react-router-dom";
 import { EmptyState } from "@contract/components/primitives";
 import { useCronletActions, useInbox } from "@contract/data/hooks";
-import type { InboxRequest } from "@contract/types/mycron";
+import type { EvidenceType, InboxRequest } from "@contract/types/mycron";
 import { useAppCopy } from "../shell/context";
 import { Inbox, Wand2 } from "../shell/icons";
 import { demoSearch, PageHead, Skeleton } from "../shell/primitives";
@@ -72,14 +72,45 @@ function InboxRow({
           </span>
         </span>
       </div>
+      <div className="parsed-contract">
+        <div className="eyebrow">{tc("inbox.parsedContract")}</div>
+        <div className="contract-grid">
+          <span className="mono">{tc("inbox.parsedSchedule")}</span>
+          <span>{req.parsedContract.scheduleLabel}</span>
+          <span className="mono">{tc("inbox.parsedActor")}</span>
+          <span>
+            {req.parsedContract.actor} · {req.parsedContract.runtime}
+          </span>
+          <span className="mono">{tc("inbox.parsedEvidence")}</span>
+          <span>{req.parsedContract.evidence.map(evidenceLabel).join(", ")}</span>
+          <span className="mono">{tc("inbox.parsedApproval")}</span>
+          <span>
+            {req.parsedContract.approvalRequired
+              ? tc("inbox.approvalRequired")
+              : tc("inbox.noApprovalRequired")}
+          </span>
+        </div>
+      </div>
       <div style={{ display: "flex", gap: 10 }}>
         <button className="ghost-btn" onClick={onDismiss}>
           {tc("action.dismiss")}
         </button>
         <button className="primary-btn" onClick={onMake}>
-          <Wand2 size={14} /> {tc("action.stageCronlet")}
+          <Wand2 size={14} /> {tc("action.createCronlet")}
         </button>
       </div>
     </div>
   );
+}
+
+function evidenceLabel(e: EvidenceType) {
+  return (
+    {
+      file: "Output file",
+      links: "Source manifest",
+      deliver: "Delivery receipt",
+      log: "Run log",
+      note: "Note",
+    } as Record<EvidenceType, string>
+  )[e];
 }
