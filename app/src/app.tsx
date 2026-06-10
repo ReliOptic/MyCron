@@ -1,4 +1,5 @@
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { useEffect } from "react";
+import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { AccountSurface } from "./surfaces/AccountSurface";
 import { BuilderSurface } from "./surfaces/BuilderSurface";
 import { CronletDetailSurface } from "./surfaces/CronletDetailSurface";
@@ -13,6 +14,7 @@ type AppProps = { demoMode: boolean };
 export function App({ demoMode }: AppProps) {
   return (
     <BrowserRouter>
+      <ScrollToTop />
       <AppShell demoMode={demoMode}>
         <Routes>
           <Route path="/" element={<RunConsoleSurface />} />
@@ -26,4 +28,13 @@ export function App({ demoMode }: AppProps) {
       </AppShell>
     </BrowserRouter>
   );
+}
+
+function ScrollToTop() {
+  const { pathname, search } = useLocation();
+  useEffect(() => {
+    document.documentElement.scrollTop = 0;
+    document.body.scrollTop = 0;
+  }, [pathname, search]);
+  return null;
 }

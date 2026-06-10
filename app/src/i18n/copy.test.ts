@@ -47,6 +47,7 @@ describe("copy dictionary", () => {
       expect(values, `${lang} copy`).not.toContain("EmptyApi");
       expect(values, `${lang} copy`).not.toContain("Provider not connected");
       expect(values, `${lang} copy`).not.toMatch(/Escalate/i);
+      expect(values, `${lang} copy`).not.toMatch(/draft/i);
     }
   });
 });

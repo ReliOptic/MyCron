@@ -140,8 +140,64 @@ describe("control-plane vocabulary surfaces", () => {
     await user.click(screen.getByRole("button", { name: "Retry" }));
     expect(await screen.findByText("Retry preview")).toBeInTheDocument();
     expect(
-      screen.getByText("Preview records intent only; no backend job is run."),
+      screen.getByText("External action requires user approval before execution."),
     ).toBeInTheDocument();
+  });
+
+  it("locks Builder validation and .mc Cronlet contract preview", async () => {
+    const user = userEvent.setup();
+    renderApp({ route: "/builder?demo=1" });
+
+    expect(await screen.findByText(".mc preview")).toBeInTheDocument();
+    const create = screen.getByRole("button", { name: "Create Cronlet" });
+    expect(create).toBeDisabled();
+    expect(screen.getByText("Cronlet name is required.")).toBeInTheDocument();
+    expect(screen.getByText("Actor/runtime is required.")).toBeInTheDocument();
+
+    await user.type(
+      screen.getByPlaceholderText("Name the Cronlet"),
+      "Deploy Health Watch",
+    );
+    await user.type(
+      screen.getByPlaceholderText("Describe the outcome and source limits"),
+      "Check staging health and attach runtime evidence.",
+    );
+    expect(screen.getByText("Schedule context")).toBeInTheDocument();
+    await user.type(screen.getByLabelText("Time"), "08:00");
+    await user.selectOptions(
+      screen.getByLabelText("Agent / runtime"),
+      "k8s-cronjob",
+    );
+
+    expect(create).toBeEnabled();
+    expect(document.body.textContent).toContain('"schema": "mycron/v0"');
+    expect(document.body.textContent).toContain('"kind": "Cronlet"');
+    expect(document.body.textContent).toContain('"schedule": "0 8 * * 1-5"');
+    expect(document.body.textContent).toContain(
+      '"client_ref": "k8s:deploy-health-watch"',
+    );
+    expect(document.body.textContent).toContain('"runtime_binding"');
+    expect(document.body.textContent).toContain('"required_capabilities"');
+    expect(
+      screen.getByText(/Possible overlap: Morning Planning Reminder/),
+    ).toBeInTheDocument();
+
+    await user.selectOptions(screen.getByLabelText("Repeat"), "interval");
+    expect(document.body.textContent).toContain('"schedule": "0 */1 * * *"');
+    expect(screen.getByText("Every 1 hour")).toBeInTheDocument();
+  });
+
+  it("shows Inbox parsed contracts and Create Cronlet action", async () => {
+    renderApp({ route: "/inbox?demo=1" });
+
+    expect(await screen.findAllByText("Parsed contract")).toHaveLength(3);
+    expect(screen.getByText("Every weekday · 08:00")).toBeInTheDocument();
+    expect(screen.getByText(/host_agent:k8s-cronjob/)).toBeInTheDocument();
+    expect(screen.getByText("Approval Gate required")).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("button", { name: /Create Cronlet/ }).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryByRole("button", { name: /Stage Cronlet/ })).toBeNull();
   });
 
   it("keeps seeded demo provenance in ADR-0006 DomainEvent shape", async () => {

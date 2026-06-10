@@ -3,7 +3,7 @@ import type {
   AlertPreference,
   ComputeBudget,
   Cronlet,
-  CronletDraft,
+  CronletStagedInput,
   InboxRequest,
   Run,
   RunState,
@@ -13,6 +13,7 @@ import type {
   AccountProfile,
 } from "@contract/types/mycron";
 import { deriveRequiredEvidence } from "@contract/data/hooks";
+import { runtimeOptionFor } from "@contract/data/runtimeOptions";
 
 const iso = (day: string, time: string) => `2026-06-${day}T${time}:00+09:00`;
 
@@ -226,6 +227,7 @@ const cronletsSeed: Cronlet[] = [
   {
     id: "cl_backup",
     name: "Backup Health Check",
+    action_type: "external",
     icon: "shield",
     intent:
       "Probe storage backends and verify last snapshot is recent and restorable.",
@@ -262,6 +264,7 @@ const cronletsSeed: Cronlet[] = [
   {
     id: "cl_repo",
     name: "Weekly Repo Digest",
+    action_type: "internal",
     icon: "git",
     intent:
       "Compile merged PRs, new issues and contributor stats into a weekly digest.",
@@ -290,6 +293,7 @@ const cronletsSeed: Cronlet[] = [
   {
     id: "cl_oss",
     name: "OSS Trend Watch",
+    action_type: "internal",
     icon: "git",
     intent:
       "Scan tracked repositories and release feeds, surface notable adoption shifts.",
@@ -325,6 +329,7 @@ const cronletsSeed: Cronlet[] = [
   {
     id: "cl_portfolio",
     name: "Daily Portfolio Brief",
+    action_type: "internal",
     icon: "trend",
     intent:
       "Summarize overnight market moves and reconcile portfolio drift before the open.",
@@ -360,6 +365,7 @@ const cronletsSeed: Cronlet[] = [
   {
     id: "cl_planning",
     name: "Morning Planning Reminder",
+    action_type: "internal",
     icon: "sparkle",
     intent:
       "Assemble today's priorities from Obsidian + calendar and send a short agenda.",
@@ -395,6 +401,7 @@ const cronletsSeed: Cronlet[] = [
   {
     id: "cl_inbox",
     name: "Inbox Triage",
+    action_type: "internal",
     icon: "inbox",
     intent:
       "Classify new mail, stage replies for recurring threads, flag anything needing human review.",
@@ -435,20 +442,63 @@ const inboxSeed: InboxRequest[] = [
     text: "every morning check if my staging deploy is healthy and tell me",
     source: "Claude Code",
     capturedLabel: "2h ago",
+    parsedContract: {
+      scheduleLabel: "Every weekday · 08:00",
+      actor: "host_agent:k8s-cronjob",
+      runtime: "K8s CronJob",
+      action_type: "internal",
+      evidence: ["links", "log", "deliver"],
+      approvalRequired: false,
+    },
   },
   {
     id: "in_pricing",
     text: "weekly, summarize what changed in the competitor pricing pages",
     source: "Telegram",
     capturedLabel: "1d ago",
+    parsedContract: {
+      scheduleLabel: "Mondays · 09:00",
+      actor: "host_agent:hermes",
+      runtime: "Hermes Cloud",
+      action_type: "internal",
+      evidence: ["links", "file", "deliver"],
+      approvalRequired: false,
+    },
   },
   {
     id: "in_oncall",
     text: "remind me to review the on-call rotation before each Monday",
     source: "Obsidian",
     capturedLabel: "3d ago",
+    parsedContract: {
+      scheduleLabel: "Mondays · 09:00",
+      actor: "host_agent:local",
+      runtime: "Local runner",
+      action_type: "external",
+      evidence: ["note", "deliver"],
+      approvalRequired: true,
+    },
   },
 ];
+
+function runtimeTargetFor(runtime: string) {
+  if (runtime === "GitHub Actions") return "github-actions";
+  if (runtime === "Local runner") return "local-runner";
+  if (runtime === "K8s CronJob") return "k8s-cronjob";
+  return "hermes";
+}
+
+function slug(value: string) {
+  return value
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 48);
+}
+
+function clientRef(originAgent: string, name: string) {
+  return `${slug(originAgent) || "staged"}:${slug(name) || "new-cronlet"}`;
+}
 
 export class SeededDemoApi implements MyCronApi {
   private cronlets = structuredClone(cronletsSeed) as Cronlet[];
@@ -512,7 +562,7 @@ export class SeededDemoApi implements MyCronApi {
   async verifyRun() {
     return;
   }
-  async createCronlet(draft: CronletDraft) {
+  async createCronlet(input: CronletStagedInput) {
     const cronletId = `cl_${Date.now()}`;
     const newRun = run(
       `run_${Math.random().toString(16).slice(2, 9)}`,
@@ -524,13 +574,17 @@ export class SeededDemoApi implements MyCronApi {
     );
     const cronlet: Cronlet = {
       id: cronletId,
-      name: draft.name || "Untitled Cronlet",
+      name: input.name || "Untitled Cronlet",
+      action_type: input.action_type,
       icon: "sparkle",
-      intent: draft.intent || "No intent supplied yet.",
-      binding: { agent: draft.agent || "Agent", runtime: "Demo runtime" },
-      scheduleLabel: draft.scheduleLabel || "Schedule not set",
-      cron: draft.cron || "",
-      timezone: draft.timezone || "Asia/Seoul",
+      intent: input.intent || "No intent supplied yet.",
+      binding: {
+        agent: input.actor || "host_agent:unknown",
+        runtime: input.runtimeLabel || "Demo runtime",
+      },
+      scheduleLabel: input.scheduleLabel || "Schedule not set",
+      cron: input.cron || "",
+      timezone: input.timezone || "Asia/Seoul",
       nextRunLabel: "Preview only · not scheduled",
       lastRunLabel: "Never run",
       state: "unverified",
@@ -543,11 +597,11 @@ export class SeededDemoApi implements MyCronApi {
     this.cronlets = [cronlet, ...this.cronlets];
     return cronlet;
   }
-  async updateCronlet(id: string, draft: Partial<CronletDraft>) {
+  async updateCronlet(id: string, input: Partial<CronletStagedInput>) {
     const c = await this.getCronlet(id);
     Object.assign(c, {
-      name: draft.name ?? c.name,
-      intent: draft.intent ?? c.intent,
+      name: input.name ?? c.name,
+      intent: input.intent ?? c.intent,
     });
     return c;
   }
@@ -566,11 +620,12 @@ export class SeededDemoApi implements MyCronApi {
   async promoteInbox(id: string) {
     const req = this.inbox.find((x) => x.id === id);
     if (!req) throw new Error(`No inbox request ${id}`);
-    const scheduleLabel =
-      req.id === "in_pricing" ? "Mondays · 09:00" : "Every weekday · 08:00";
+    const scheduleLabel = req.parsedContract.scheduleLabel;
     const cron = scheduleLabel.startsWith("Mondays")
       ? "0 9 * * 1"
       : "0 8 * * 1-5";
+    const runtimeTarget = runtimeTargetFor(req.parsedContract.runtime);
+    const runtimeOption = runtimeOptionFor(runtimeTarget);
     const donePolicy = {
       ran: true,
       sources: true,
@@ -588,12 +643,23 @@ export class SeededDemoApi implements MyCronApi {
       scheduleLabel,
       cron,
       timezone: "Asia/Seoul",
-      agent: req.id === "in_staging" ? "OpsAgent" : "ResearchAgent",
+      actor: req.parsedContract.actor,
+      runtimeTarget,
+      runtimeLabel: req.parsedContract.runtime,
+      originAgent: runtimeOption?.originAgent ?? "staged",
+      action_type: req.parsedContract.action_type,
+      client_ref: clientRef(
+        runtimeOption?.originAgent ?? "staged",
+        req.id === "in_staging"
+          ? "Staging Deploy Watch"
+          : req.text.split(",")[0] || "New Cronlet",
+      ),
+      requiredCapabilities: runtimeOption?.requiredCapabilities ?? [],
       deliverTo: "MyCron Inbox + Telegram",
       donePolicy,
       requiredEvidence: deriveRequiredEvidence(donePolicy),
       seededFromInboxId: id,
-    } satisfies CronletDraft;
+    } satisfies CronletStagedInput;
   }
   async getWeeklyReview(): Promise<WeeklyReview> {
     return {
