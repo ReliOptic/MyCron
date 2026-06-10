@@ -1,4 +1,5 @@
 import { exitCodes } from "../../../packages/schema/src";
+import { approvalCommand } from "./approval-command";
 import { commandFor, errorEnvelope, okEnvelope } from "./envelopes";
 import { cronletCommand } from "./cronlet-command";
 import { packCommand } from "./pack-command";
@@ -38,8 +39,8 @@ export function executeJson(parsed: ParsedCommand, env: CliEnv): CliResult {
   if (!parsed.resource || !knownResources.has(parsed.resource)) {
     return jsonError(command, env, "USAGE_ERROR", "Unknown MyCron resource.", "mycron --help", exitCodes.usage);
   }
-  if (parsed.resource === "approval" && parsed.verb === "approve") {
-    return approvalApprove(parsed, env, command);
+  if (parsed.resource === "approval") {
+    return approvalCommand(parsed, env, command);
   }
   return jsonError(
     command,
@@ -75,36 +76,6 @@ function configDoctorEnvelope(command: string, env: CliEnv) {
       { name: "output", ok: true, source: env.MYCRON_OUTPUT === "json" ? "MYCRON_OUTPUT" : "default" },
     ],
   }, "mycron status --json");
-}
-
-function approvalApprove(parsed: ParsedCommand, env: CliEnv, command: string): CliResult {
-  const approvalId = parsed.id ?? "<approval-id>";
-  if (parsed.flags.confirm !== true) {
-    return jsonError(
-      command,
-      env,
-      "MISSING_CONFIRM",
-      "approval approve requires --confirm.",
-      `mycron approval approve ${approvalId} --confirm --json`,
-      exitCodes.usage,
-    );
-  }
-  return jsonError(
-    command,
-    env,
-    "NOT_IMPLEMENTED",
-    "Approval execution is not implemented in the skeleton.",
-    `mycron approval get ${approvalId} --json`,
-    exitCodes.runtime,
-    {
-      outcome: "not_implemented",
-      resource: "approval",
-      verb: "approve",
-      id: approvalId,
-      confirmed_write: true,
-      external_execution_approved: true,
-    },
-  );
 }
 
 function jsonOk(envelope: unknown): CliResult {
