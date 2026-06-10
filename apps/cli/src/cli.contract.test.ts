@@ -123,11 +123,11 @@ describe("MyCron CLI contract v0", () => {
 
   it("keeps nested resources in the canonical envelope command", () => {
     const result = runCli(["run", "evidence", "list", "--run", "run_001", "--json"], baseEnv);
-    expect(result.exitCode).toBe(1);
+    expect(result.exitCode).toBe(0);
     expect(JSON.parse(result.stdout)).toMatchObject({
       meta: { command: "run evidence list" },
-      status: "error",
-      error: { code: "NOT_IMPLEMENTED" },
+      status: "ok",
+      result: { resource: "evidence" },
     });
   });
 
