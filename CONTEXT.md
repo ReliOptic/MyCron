@@ -81,6 +81,12 @@ _Avoid_: rule(너무 일반), config
 누적되어 해자 자산이 된다.
 _Avoid_: history(약함), event log
 
+**Actor**:
+하나의 행위(등록·전이·승인·거부)의 책임 주체 — `user` | `host_agent` | `system`. Audit Log의
+"누가"를 구성한다. 행위의 유효성은 채널(CLI/Control Surface)이 아니라 Actor가 정한다:
+Approval Gate의 approve/reject는 user Actor만 유효하다(ADR-0007).
+_Avoid_: principal(인증 메커니즘 용어), subject
+
 **Control Surface**:
 사용자가 cronlet을 보고, Approval Queue를 승인/거부하고, 취소·정지하고, Audit Log를
 감사하는 화면.
@@ -133,3 +139,11 @@ _Avoid_: action(Action Type과 혼동), interaction
 - "삭제"가 Cronlet과 Memory에서 같은 뜻으로 오해됨 — 해결: Cronlet은 운영 감사자산이라
   hard delete 없음(cancel/archive). Memory는 개인 데이터라 forget(소거)이 정당하다. 둘은
   lifecycle 원칙이 다르다(ADR-0005).
+- CLI가 "통제 진입구"라서 host agent의 self-approval이 가능한 듯 보였음 — 해결: 행위의
+  유효성은 채널이 아니라 **Actor**가 정한다. approval approve/reject는 actor가 user일 때만
+  유효하고, CLI의 기본 actor는 host_agent다. 거부된 self-approval 시도도 Audit Log에
+  outcome과 함께 남는다(ADR-0007).
+- Audit Log가 "기록"이라 mutation의 부산물로 오해됨 — 해결: 인과가 반대다. 모든 mutation은
+  최소 1개의 domain event를 동반해야 하며(event 없는 mutation 금지), Audit Log는 그 event
+  ledger 자체다. 단 역방향은 강제하지 않는다 — state를 바꾸지 않은 gate 거부 시도도
+  event가 될 수 있다(ADR-0006).
