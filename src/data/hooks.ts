@@ -119,7 +119,7 @@ export function useCronletActions() {
     retryRun: (runId: string) => api.retryRun(runId),
     rearm: (id: string) => api.rearmSchedule(id),
     escalate: (runId: string, note?: string) => api.escalate(runId, note),
-    confirm: (runId: string) => api.confirmRun(runId),
+    confirm: (runId: string) => api.verifyRun(runId),
     create: (draft: CronletDraft) => api.createCronlet(draft),
     update: (id: string, draft: Partial<CronletDraft>) => api.updateCronlet(id, draft),
     previewSchedule: (cron: string, tz: string, count = 4) =>

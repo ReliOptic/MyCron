@@ -22,15 +22,15 @@ export interface MyCronApi {
   listRuns(cronletId: string, opts?: { limit?: number; cursor?: string }):
     Promise<{ runs: Run[]; nextCursor?: string }>;
 
-  // ---- actions ----
+  // ---- domain transitions ----
   runNow(cronletId: string): Promise<{ runId: string }>;
   pause(cronletId: string): Promise<void>;
   resume(cronletId: string): Promise<void>;
   retryRun(runId: string): Promise<{ runId: string }>;
   rearmSchedule(cronletId: string): Promise<void>;
   escalate(runId: string, note?: string): Promise<void>;
-  /** Confirm the "user goal satisfied" condition (read-back). */
-  confirmRun(runId: string): Promise<void>;
+  /** Recompute Run verification/read-back state; not manual approval. */
+  verifyRun(runId: string): Promise<void>;
 
   // ---- builder ----
   createCronlet(draft: CronletDraft): Promise<Cronlet>;
@@ -49,7 +49,7 @@ export interface MyCronApi {
   getWeeklyReview(rangeStart?: string): Promise<WeeklyReview>;
   applySuggestion(suggestionId: string): Promise<void>;
 
-  // ---- account / workspace ----
+  // ---- Account scope ----
   getAccount(): Promise<AccountProfile | null>;
   getComputeBudget(): Promise<ComputeBudget | null>;
   getAlertPreferences(): Promise<AlertPreference[]>;
@@ -64,7 +64,7 @@ export interface MyCronApi {
 //  GET    /cronlets/:id/runs?limit&cursor
 //  POST   /cronlets/:id/run
 //  POST   /cronlets/:id/pause | /resume | /rearm
-//  POST   /runs/:runId/retry | /escalate | /confirm
+//  POST   /runs/:runId/retry | /escalate | /verify
 //  POST   /cronlets                      (create)
 //  PATCH  /cronlets/:id                  (update)
 //  POST   /schedule/preview              { cron, timezone, count }

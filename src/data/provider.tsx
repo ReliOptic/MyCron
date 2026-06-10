@@ -78,8 +78,8 @@ export const EmptyApi: MyCronApi = {
   escalate: async () => {
     throw new NotImplementedError("escalate");
   },
-  confirmRun: async () => {
-    throw new NotImplementedError("confirmRun");
+  verifyRun: async () => {
+    throw new NotImplementedError("verifyRun");
   },
   createCronlet: async () => {
     throw new NotImplementedError("createCronlet");
