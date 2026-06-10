@@ -26,6 +26,30 @@ _Avoid_: category, kind
 사용자 계정에 등록되어 실행·표시·통제되는 scheduled action의 인스턴스.
 _Avoid_: automation, recipe, applet
 
+**Client Ref**:
+host agent가 자기 Cronlet에 부여하는 **불변** 외부 식별자(`<origin-agent>:<slug>`). prefix의
+agent는 *등록·소유 origin 네임스페이스*이지 현재 실행 executor가 아니다(Rebind는 executor를
+바꿔도 Client Ref를 보존한다). `(Account, Client Ref)`로 upsert되어 재시도 멱등성·중복 방지·
+Mygration 리바인딩의 앵커가 된다. cross-agent 중립의 식별 축.
+_Avoid_: idempotency key(요청 단위·휘발성이라 다름), external id
+
+**Pack**:
+여러 Cronlet 스펙/템플릿/필요 capability를 묶는 번들. Cronlet과 같은 `.mc` 포맷을 쓰되
+`kind: Pack`으로 구분된다. Pack의 cronlet을 실제로 인스턴스화하는 설치는 후속 범위.
+_Avoid_: bundle(일반), template(부분만)
+
+**Evidence**:
+하나의 Run에 종속된 **불변** 완료 증명물(artifact·source·log·delivery·read-back). "과거 실행이
+실제로 끝났다"를 증명하며 미래 행동을 바꾸지 않는다. runtime이 붙인 것(runtime_attested)만
+Done Policy를 충족시킬 수 있고, agent/사용자가 낸 것(self_reported)은 verified로 세지 않는다.
+_Avoid_: proof(일반), artifact(일부만), log
+
+**Memory**:
+Account에 속한, 사용자 소유의 **가변·소거 가능한** 미래-맥락(선호·제약·도메인 지식). 미래 agent
+행동에 영향을 주며, 개인 데이터이므로 forget(content 소거 + tombstone)이 허용된다(Cronlet의
+no-delete와 대비). Evidence와 반대 성격 — 증명이 아니라 맥락.
+_Avoid_: evidence(반대 개념), history, context(너무 일반)
+
 **Account**:
 MyCron 서버에서 cronlet 소유 경계를 정하는 인증된 사용자 신원. CLI 전송과 통제는 이
 계정으로 스코프된다. 사용자가 *소유*하는 경계라는 점이 핵심(cross-agent 중립의 전제).
@@ -97,3 +121,15 @@ _Avoid_: action(Action Type과 혼동), interaction
 - cross-agent 중립이 "아무 agent나 막 쓴다"로 오해됐음 — 해결: agent는 신뢰되지 않는
   입력원으로 취급하고 ingestion에서 하드닝한다(ADR-0002). 중립 = 특정 랩에 종속 안 함이지
   검증 없이 받는다는 뜻이 아니다.
+- "승인"이 *CLI 쓰기 확정*과 *실행 승인* 두 뜻으로 혼동됨 — 해결: 둘은 다른 안전층이다.
+  CLI `--confirm` = control-plane write 확정(cronlet 등록·수정), **Approval Gate** = external
+  action의 *실행* 승인. `--confirm`은 절대 external 실행을 승인하지 않는다(ADR-0004,
+  결과의 `confirmed_write` ≠ `external_execution_approved`).
+- **Memory**와 **Evidence**가 혼동됨 — 해결: Evidence=run-scoped 불변 과거 증명, Memory=
+  account-scoped 가변 미래 맥락. agent는 run 증거를 Memory에, 선호를 Evidence에 저장하지
+  않는다(ADR-0005).
+- 메모리 파일 이름이 `.my`와 `.mmy`로 갈렸음 — 해결: canonical은 `.my`(`kind: MemoryItem |
+  MemoryMigration`). `.mmy`는 폐기(legacy)다(ADR-0005).
+- "삭제"가 Cronlet과 Memory에서 같은 뜻으로 오해됨 — 해결: Cronlet은 운영 감사자산이라
+  hard delete 없음(cancel/archive). Memory는 개인 데이터라 forget(소거)이 정당하다. 둘은
+  lifecycle 원칙이 다르다(ADR-0005).

@@ -11,7 +11,7 @@ This file is a strategy addendum to the existing MyCron docs, not a replacement.
 - [`docs/prd.md`](prd.md): canonical PRD and Utility Pack / GenUI product contract.
 - [`docs/llm-genui.md`](llm-genui.md): governed GenUI spec generation contract.
 - [`docs/competitive-landscape-agentwatch-cronicle.md`](competitive-landscape-agentwatch-cronicle.md): AgentWatch/Cronicle competitive-reference analysis for AI observability and scheduled job operations.
-- [`docs/mygration-memory-portability.md`](mygration-memory-portability.md): Mygration as Cronlet + memory portability, including proposed `.mmy` Memory Migration artifacts.
+- [`docs/mygration-memory-portability.md`](mygration-memory-portability.md): Mygration as Cronlet + memory portability, including `.my` Memory Migration artifacts (`kind: MemoryMigration`; the older `.mmy` name is deprecated — see ADR-0005).
 - This file: 2026-06 portfolio/gateway update that connects the existing Utility Pack work to `.mc`, Cronlet, Done Policy, evidence, CronBell, Campsite surfaces, and BALTAM/OverEdge boundaries.
 
 The previous `Utility Pack` thesis remains valid as the rendering/surface layer. The updated strategy makes the Cronlet runtime and verified completion semantics the operating center.

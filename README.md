@@ -31,6 +31,7 @@ Read these before asking Claude Code to scaffold implementation:
 - [`docs/product-implementation-spec.md`](docs/product-implementation-spec.md): latest CTO-level build direction for moving this docs-only seed repo toward a real MyCron runtime, CLI, and control surface.
 - [`docs/strategy.md`](docs/strategy.md): ShareIdee portfolio/gateway strategy and current MyCron/Campsite/BALTAM boundary.
 - [`docs/adr/0003-agent-first-cli.md`](docs/adr/0003-agent-first-cli.md): current agent-first CLI ADR from the pivoted control-plane direction.
+- [`docs/adr/0004-cli-command-grammar.md`](docs/adr/0004-cli-command-grammar.md) + [`docs/mycron-cli-grammar.md`](docs/mycron-cli-grammar.md): canonical CLI command grammar (resource-scoped, `--json` output-only, `client_ref` idempotency, `--confirm` vs Approval Gate).
 - [`docs/mygration-memory-portability.md`](docs/mygration-memory-portability.md): Mygration as migration of Cronlets plus agent memory, including the proposed `.my` memory migration artifact.
 
 CTO standard:
@@ -115,20 +116,27 @@ Defined in `CONTEXT.md`. In short:
 
 ## Example (agent-first CLI)
 
+The CLI is resource-scoped — `mycron <resource> <verb> [id] [flags]`. `--json` is **output**
+only; input is `--file` / `--input-json`. Full grammar: [`docs/mycron-cli-grammar.md`](docs/mycron-cli-grammar.md).
+
 ```bash
-# external action → goes to the approval queue, does not run yet
-mycron create --json '{"action_type":"email.send","schedule":"tomorrow 09:00","args":{"to":"client@x.com","subject":"Invoice"}}'
+# external action → cronlet is registered, but execution waits on the Approval Gate
+mycron cronlet create --file invoice.mc --confirm --json
+# → { "status":"created","id":"crn_001","requires_approval":true,
+#     "approval":{"id":"apr_001","next_command":"mycron approval approve apr_001 --json"} }
 
-# user (or script) approves a queued action
-mycron approve crn_001
+# user (or script) approves the queued external action — only now may it execute
+mycron approval approve apr_001 --json
 
-# internal action → auto-executes per policy
-mycron create --json '{"action_type":"brief.daily","schedule":"daily 08:30","args":{"topic":"..."}}'
+# internal action → auto-executes per Policy (no approval needed)
+mycron cronlet create --file daily-brief.mc --confirm --json
 ```
 
-CLI is an agent-first CRUD client for the Cronlet store plus control verbs
-(`approve` / `reject`). See `docs/adr/0003-agent-first-cli.md` and
-`docs/product-implementation-spec.md`.
+`--confirm` confirms only the CLI write; it never approves external execution (that is the
+Approval Gate). CLI is an agent-first CRUD client for the Cronlet store plus control verbs
+(`approval approve` / `approval reject`). See
+[`docs/adr/0004-cli-command-grammar.md`](docs/adr/0004-cli-command-grammar.md),
+`docs/adr/0003-agent-first-cli.md`, and `docs/product-implementation-spec.md`.
 
 ---
 

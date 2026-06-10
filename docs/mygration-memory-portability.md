@@ -2,6 +2,16 @@
 
 > Last updated: 2026-06-08
 > Purpose: define Mygration as a key MyCron feature for people operating multiple agents. Mygration is not only cron import/export; it is migration of scheduled work, agent context, memory, evidence, and operational state.
+>
+> **CLI-syntax note (superseded):** This document predates the locked CLI contract. For the
+> authoritative command grammar, defer to [`mycron-cli-grammar.md`](mycron-cli-grammar.md) +
+> [`adr/0005-cli-contract-hardening.md`](adr/0005-cli-contract-hardening.md). Specifically, the
+> CLI examples below are **out of date**: there is no flat `mycron import/export` (use
+> `mycron mygration import/inspect/diff/rebind` + `mycron cronlet create` for activation),
+> `mygration import` only stages (never creates live cronlets), the memory artifact is `.my`
+> with `kind: MemoryItem | MemoryMigration` (`.mmy` is deprecated), and memory-graph verbs
+> (`domains`/`graph`/`view`/`attach`/`detach`/`summarize`/`search`) are future scope. The
+> conceptual content (what gets migrated, memory safety, `.mc`/`.my` shapes) remains valid.
 
 ## 1. Core thesis
 
