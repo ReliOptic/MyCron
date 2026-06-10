@@ -1,6 +1,10 @@
 import React from "react";
 import { EmptyState } from "@contract/components/primitives";
-import { useCronletActions, useCronlets, useWeeklyReview } from "@contract/data/hooks";
+import {
+  useCronletActions,
+  useCronlets,
+  useWeeklyReview,
+} from "@contract/data/hooks";
 import type { Cronlet, WeeklyReview } from "@contract/types/mycron";
 import { useAppCopy, useNotice } from "../shell/context";
 import { ChevronRight } from "../shell/icons";
@@ -13,9 +17,171 @@ export function WeeklyReviewSurface() {
   const actions = useCronletActions();
   const { showNotice } = useNotice();
   if (loading) return <Skeleton title="Loading weekly review" />;
-  if (error) return <EmptyState title="Couldn’t load weekly review" hint={error.message} />;
-  if (!review?.totalRuns) return <><PageHead eyebrow={tc("review.eyebrow")} title={tc("review.title")} sub={tc("review.summary")}/><EmptyState title={tc("review.empty")} hint={tc("review.emptyHint")} /></>;
-  return <><PageHead eyebrow={`${tc("review.eyebrow")} · ${review.rangeLabel}`} title={tc("review.title")} sub={tc("review.summary")} action={<button className="ghost-btn" onClick={() => showNotice(tc("notice.exportTitle"), tc("notice.exportDetail"))}>{tc("action.export")}</button>} /><ReviewStats review={review}/><SignalMatrix cronlets={cronlets ?? []}/><div className="grid two-col" style={{ marginTop: 18 }}><section className="card"><div className="card-pad"><h3>{tc("review.improvements")}</h3><p className="muted">{tc("review.improvementsHint")}</p></div>{review.suggestions.map((s) => <div className="suggestion" key={s.id}><StateDot state={s.state}/><div><b>{s.title}</b><br/><span className="muted">{s.body}</span></div><button className="ghost-btn" onClick={() => actions.applySuggestion(s.id).then(() => showNotice(tc("notice.reviewActionTitle", { action: s.actionLabel }), tc("notice.reviewActionDetail")))}>{s.actionLabel} <ChevronRight size={14}/></button></div>)}</section><section className="card"><div className="card-pad"><h3>{tc("review.corrections")}</h3><p className="muted">{tc("review.correctionsHint")}</p></div>{review.corrections.map((c) => <div className="policy-row" key={c.id}><StateDot state={c.state}/><div><b>{c.title}</b><br/><span className="muted">{c.detail}</span></div></div>)}<div className="card-pad" style={{ background: "var(--mint)", color: "var(--green)" }}>{tc("review.estimate", { rate: 92 })}</div></section></div></>;
+  if (error)
+    return (
+      <EmptyState title="Couldn’t load weekly review" hint={error.message} />
+    );
+  if (!review?.totalRuns)
+    return (
+      <>
+        <PageHead
+          eyebrow={tc("review.eyebrow")}
+          title={tc("review.title")}
+          sub={tc("review.summary")}
+        />
+        <EmptyState title={tc("review.empty")} hint={tc("review.emptyHint")} />
+      </>
+    );
+  return (
+    <>
+      <PageHead
+        eyebrow={`${tc("review.eyebrow")} · ${review.rangeLabel}`}
+        title={tc("review.title")}
+        sub={tc("review.summary")}
+        action={
+          <button
+            className="ghost-btn"
+            onClick={() =>
+              showNotice(tc("notice.exportTitle"), tc("notice.exportDetail"))
+            }
+          >
+            {tc("action.export")}
+          </button>
+        }
+      />
+      <ReviewStats review={review} />
+      <SignalMatrix cronlets={cronlets ?? []} />
+      <div className="grid two-col" style={{ marginTop: 18 }}>
+        <section className="card">
+          <div className="card-pad">
+            <h3>{tc("review.improvements")}</h3>
+            <p className="muted">{tc("review.improvementsHint")}</p>
+          </div>
+          {review.suggestions.map((s) => (
+            <div className="suggestion" key={s.id}>
+              <StateDot state={s.state} />
+              <div>
+                <b>{s.title}</b>
+                <br />
+                <span className="muted">{s.body}</span>
+              </div>
+              <button
+                className="ghost-btn"
+                onClick={() =>
+                  actions
+                    .applySuggestion(s.id)
+                    .then(() =>
+                      showNotice(
+                        tc("notice.reviewActionTitle", {
+                          action: s.actionLabel,
+                        }),
+                        tc("notice.reviewActionDetail"),
+                      ),
+                    )
+                }
+              >
+                {s.actionLabel} <ChevronRight size={14} />
+              </button>
+            </div>
+          ))}
+        </section>
+        <section className="card">
+          <div className="card-pad">
+            <h3>{tc("review.corrections")}</h3>
+            <p className="muted">{tc("review.correctionsHint")}</p>
+          </div>
+          {review.corrections.map((c) => (
+            <div className="policy-row" key={c.id}>
+              <StateDot state={c.state} />
+              <div>
+                <b>{c.title}</b>
+                <br />
+                <span className="muted">{c.detail}</span>
+              </div>
+            </div>
+          ))}
+          <div
+            className="card-pad"
+            style={{ background: "var(--mint)", color: "var(--green)" }}
+          >
+            {tc("review.estimate", { rate: 92 })}
+          </div>
+        </section>
+      </div>
+    </>
+  );
 }
-function ReviewStats({ review }: { review: WeeklyReview }) { const { tc } = useAppCopy(); const rate = review.totalRuns ? Math.round((review.verifiedRuns / review.totalRuns) * 100) : 0; return <div className="grid stats" style={{ marginBottom: 18 }}><div className="card stat"><div className="eyebrow">{tc("review.verifiedRate")}</div><div className="stat-value" style={{ color: "var(--ok)" }}>{rate}% ↑3</div><div className="stat-sub">{review.verifiedRuns}/{review.totalRuns} runs this week</div></div><div className="card stat"><div className="eyebrow">{tc("review.failedRuns")}</div><div className="stat-value" style={{ color: "var(--bad)" }}>{review.failed}</div><div className="stat-sub">across 1 cronlet</div></div><div className="card stat"><div className="eyebrow">{tc("review.staleRoutines")}</div><div className="stat-value" style={{ color: "var(--stale)" }}>{review.stale}</div><div className="stat-sub">schedule drift</div></div><div className="card stat"><div className="eyebrow">{tc("status.unverified")}</div><div className="stat-value" style={{ color: "var(--unv)" }}>{review.unverified}</div><div className="stat-sub">ran, not proven</div></div><div className="card stat"><div className="eyebrow">{tc("review.computeCost")}</div><div className="stat-value">{review.costLabel}</div><div className="stat-sub">all routines · 7d</div></div></div>; }
-function SignalMatrix({ cronlets }: { cronlets: Cronlet[] }) { const { tc } = useAppCopy(); const days = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"]; return <div className="card"><div className="card-pad"><h3>{tc("review.weeklyStatus")}</h3></div><div className="matrix"><div className="matrix-head">{tc("table.routine")}</div>{days.map((d) => <div key={d} className="matrix-head">{d}</div>)}{cronlets.map((c) => <React.Fragment key={c.id}><div>{c.name}</div>{c.health.slice(0, days.length).map((h, i) => <div key={i}><Health days={[h]}/></div>)}</React.Fragment>)}</div></div>; }
+function ReviewStats({ review }: { review: WeeklyReview }) {
+  const { tc } = useAppCopy();
+  const rate = review.totalRuns
+    ? Math.round((review.verifiedRuns / review.totalRuns) * 100)
+    : 0;
+  return (
+    <div className="grid stats" style={{ marginBottom: 18 }}>
+      <div className="card stat">
+        <div className="eyebrow">{tc("review.verifiedRate")}</div>
+        <div className="stat-value" style={{ color: "var(--ok)" }}>
+          {rate}% ↑3
+        </div>
+        <div className="stat-sub">
+          {review.verifiedRuns}/{review.totalRuns} runs this week
+        </div>
+      </div>
+      <div className="card stat">
+        <div className="eyebrow">{tc("review.failedRuns")}</div>
+        <div className="stat-value" style={{ color: "var(--bad)" }}>
+          {review.failed}
+        </div>
+        <div className="stat-sub">across 1 cronlet</div>
+      </div>
+      <div className="card stat">
+        <div className="eyebrow">{tc("review.staleCronlets")}</div>
+        <div className="stat-value" style={{ color: "var(--stale)" }}>
+          {review.stale}
+        </div>
+        <div className="stat-sub">schedule drift</div>
+      </div>
+      <div className="card stat">
+        <div className="eyebrow">{tc("status.unverified")}</div>
+        <div className="stat-value" style={{ color: "var(--unv)" }}>
+          {review.unverified}
+        </div>
+        <div className="stat-sub">ran, not proven</div>
+      </div>
+      <div className="card stat">
+        <div className="eyebrow">{tc("review.computeCost")}</div>
+        <div className="stat-value">{review.costLabel}</div>
+        <div className="stat-sub">all Cronlets · 7d</div>
+      </div>
+    </div>
+  );
+}
+function SignalMatrix({ cronlets }: { cronlets: Cronlet[] }) {
+  const { tc } = useAppCopy();
+  const days = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+  return (
+    <div className="card">
+      <div className="card-pad">
+        <h3>{tc("review.weeklyStatus")}</h3>
+      </div>
+      <div className="matrix">
+        <div className="matrix-head">{tc("table.cronlet")}</div>
+        {days.map((d) => (
+          <div key={d} className="matrix-head">
+            {d}
+          </div>
+        ))}
+        {cronlets.map((c) => (
+          <React.Fragment key={c.id}>
+            <div>{c.name}</div>
+            {c.health.slice(0, days.length).map((h, i) => (
+              <div key={i}>
+                <Health days={[h]} />
+              </div>
+            ))}
+          </React.Fragment>
+        ))}
+      </div>
+    </div>
+  );
+}

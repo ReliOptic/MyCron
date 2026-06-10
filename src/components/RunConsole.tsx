@@ -1,7 +1,7 @@
 // ============================================================
 // MyCron — Run Console (first surface shell)
 // ------------------------------------------------------------
-// The main dashboard: resolve every routine to a state you can
+// The main dashboard: resolve every Cronlet to a state you can
 // trust, surfacing problems first. This is a CONTAINER — it owns
 // loading / empty / error and reads data only through hooks. It
 // embeds ZERO fixtures; under the default EmptyApi it renders an
@@ -13,9 +13,21 @@
 // ============================================================
 
 import React from "react";
-import { color, status, radius, shadow, font, STATUS_LABEL } from "../styles/tokens";
+import {
+  color,
+  status,
+  radius,
+  shadow,
+  font,
+  STATUS_LABEL,
+} from "../styles/tokens";
 import { StatusBadge, HealthStrip, Mono, EmptyState } from "./primitives";
-import { useCronlets, countByState, byTriagePriority, STATE_ORDER } from "../data/hooks";
+import {
+  useCronlets,
+  countByState,
+  byTriagePriority,
+  STATE_ORDER,
+} from "../data/hooks";
 import type { Cronlet, RunState } from "../types/mycron";
 
 // ---- container: owns loading / empty / error ----
@@ -29,13 +41,13 @@ export function RunConsole({ onOpen }: { onOpen?: (c: Cronlet) => void }) {
         <ConsoleSkeleton />
       ) : error ? (
         <EmptyState
-          title="Couldn’t load routines"
+          title="Couldn’t load Cronlets"
           hint={`${error.message} — check your MyCronApi wiring, then retry.`}
         />
       ) : !data || data.length === 0 ? (
         <EmptyState
-          title="No cronlets yet"
-          hint="Register a routine from an agent (MyCron CLI) or promote one from the Routine Inbox."
+          title="No Cronlets yet"
+          hint="Register a Cronlet from a host agent (MyCron CLI) or promote one from the Inbox."
         />
       ) : (
         <>
@@ -54,7 +66,13 @@ export function RunConsole({ onOpen }: { onOpen?: (c: Cronlet) => void }) {
 // ---- presentational: page header ----
 function ConsoleHeader() {
   return (
-    <header style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between" }}>
+    <header
+      style={{
+        display: "flex",
+        alignItems: "flex-end",
+        justifyContent: "space-between",
+      }}
+    >
       <div>
         <div
           style={{
@@ -68,7 +86,14 @@ function ConsoleHeader() {
         >
           Run Console
         </div>
-        <h1 style={{ fontSize: 27, fontWeight: 700, letterSpacing: "-0.032em", color: color.ink }}>
+        <h1
+          style={{
+            fontSize: 27,
+            fontWeight: 700,
+            letterSpacing: "-0.032em",
+            color: color.ink,
+          }}
+        >
           Operating Ledger
         </h1>
       </div>
@@ -101,19 +126,39 @@ function TriageTile({ state, count }: { state: RunState; count: number }) {
         boxShadow: shadow.card,
       }}
     >
-      <div style={{ fontFamily: font.mono, fontSize: 30, fontWeight: 700, letterSpacing: "-0.03em", color: s.text }}>
+      <div
+        style={{
+          fontFamily: font.mono,
+          fontSize: 30,
+          fontWeight: 700,
+          letterSpacing: "-0.03em",
+          color: s.text,
+        }}
+      >
         {count}
       </div>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}>
-        <span style={{ width: 7, height: 7, borderRadius: 7, background: s.dot }} />
-        <span style={{ fontSize: 12.5, fontWeight: 600, color: color.sub }}>{STATUS_LABEL[state]}</span>
+      <div
+        style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 4 }}
+      >
+        <span
+          style={{ width: 7, height: 7, borderRadius: 7, background: s.dot }}
+        />
+        <span style={{ fontSize: 12.5, fontWeight: 600, color: color.sub }}>
+          {STATUS_LABEL[state]}
+        </span>
       </div>
     </div>
   );
 }
 
 // ---- presentational: ledger (rows sorted by triage priority) ----
-function Ledger({ cronlets, onOpen }: { cronlets: Cronlet[]; onOpen?: (c: Cronlet) => void }) {
+function Ledger({
+  cronlets,
+  onOpen,
+}: {
+  cronlets: Cronlet[];
+  onOpen?: (c: Cronlet) => void;
+}) {
   return (
     <div
       style={{
@@ -163,7 +208,13 @@ function LedgerHeaderRow() {
   );
 }
 
-function LedgerRow({ cronlet, onOpen }: { cronlet: Cronlet; onOpen?: (c: Cronlet) => void }) {
+function LedgerRow({
+  cronlet,
+  onOpen,
+}: {
+  cronlet: Cronlet;
+  onOpen?: (c: Cronlet) => void;
+}) {
   const c = cronlet;
   return (
     <button
@@ -201,7 +252,10 @@ function LedgerRow({ cronlet, onOpen }: { cronlet: Cronlet; onOpen?: (c: Cronlet
       <Mono>{c.lastRunLabel}</Mono>
       <Mono>{c.nextRunLabel}</Mono>
       <HealthStrip days={c.health} />
-      <span aria-hidden style={{ color: color.mute, fontSize: 16, textAlign: "center" }}>
+      <span
+        aria-hidden
+        style={{ color: color.mute, fontSize: 16, textAlign: "center" }}
+      >
         ›
       </span>
     </button>

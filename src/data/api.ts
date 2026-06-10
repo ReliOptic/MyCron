@@ -8,8 +8,14 @@
 // ============================================================
 
 import type {
-  Cronlet, Run, InboxRequest, WeeklyReview, CronletDraft,
-  AccountProfile, ComputeBudget, AlertPreference,
+  Cronlet,
+  Run,
+  InboxRequest,
+  WeeklyReview,
+  CronletDraft,
+  AccountProfile,
+  ComputeBudget,
+  AlertPreference,
 } from "../types/mycron";
 
 export interface MyCronApi {
@@ -19,8 +25,10 @@ export interface MyCronApi {
   /** Full detail for one cronlet (includes latestRun proof). */
   getCronlet(id: string): Promise<Cronlet>;
   /** Paginated run history for a cronlet. */
-  listRuns(cronletId: string, opts?: { limit?: number; cursor?: string }):
-    Promise<{ runs: Run[]; nextCursor?: string }>;
+  listRuns(
+    cronletId: string,
+    opts?: { limit?: number; cursor?: string },
+  ): Promise<{ runs: Run[]; nextCursor?: string }>;
 
   // ---- domain transitions ----
   runNow(cronletId: string): Promise<{ runId: string }>;
@@ -28,7 +36,7 @@ export interface MyCronApi {
   resume(cronletId: string): Promise<void>;
   retryRun(runId: string): Promise<{ runId: string }>;
   rearmSchedule(cronletId: string): Promise<void>;
-  escalate(runId: string, note?: string): Promise<void>;
+  notify(runId: string, note?: string): Promise<void>;
   /** Recompute Run verification/read-back state; not manual approval. */
   verifyRun(runId: string): Promise<void>;
 
@@ -36,10 +44,13 @@ export interface MyCronApi {
   createCronlet(draft: CronletDraft): Promise<Cronlet>;
   updateCronlet(id: string, draft: Partial<CronletDraft>): Promise<Cronlet>;
   /** Server-side cron preview: next N fire times for a cron+tz. */
-  previewSchedule(cron: string, timezone: string, count: number):
-    Promise<string[]>;
+  previewSchedule(
+    cron: string,
+    timezone: string,
+    count: number,
+  ): Promise<string[]>;
 
-  // ---- routine inbox ----
+  // ---- inbox ----
   listInbox(): Promise<InboxRequest[]>;
   dismissInbox(id: string): Promise<void>;
   /** Promote a raw request into a pre-filled draft (server may use an LLM). */
@@ -64,7 +75,7 @@ export interface MyCronApi {
 //  GET    /cronlets/:id/runs?limit&cursor
 //  POST   /cronlets/:id/run
 //  POST   /cronlets/:id/pause | /resume | /rearm
-//  POST   /runs/:runId/retry | /escalate | /verify
+//  POST   /runs/:runId/retry | /notify | /verify
 //  POST   /cronlets                      (create)
 //  PATCH  /cronlets/:id                  (update)
 //  POST   /schedule/preview              { cron, timezone, count }

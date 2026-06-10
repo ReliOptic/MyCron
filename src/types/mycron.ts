@@ -8,7 +8,7 @@
 // ============================================================
 
 /** The four operational run states. `unverified` is first-class:
- *  a routine can finish executing yet remain unproven. */
+ *  a Cronlet can finish executing yet remain unproven. */
 export type RunState = "verified" | "failed" | "stale" | "unverified";
 
 /** Transient lifecycle states used in headers / live indicators. */
@@ -33,6 +33,30 @@ export interface DoneCondition {
 /** Kinds of evidence the manifest can hold. Drives the icon + grouping. */
 export type EvidenceType = "file" | "links" | "deliver" | "log" | "note";
 
+export type ActorKind = "user" | "host_agent" | "system";
+
+export interface Actor {
+  kind: ActorKind;
+  id: string | null;
+}
+
+export type EvidenceProvenance =
+  | "self_reported"
+  | "runtime_attested"
+  | "verified"
+  | "rejected";
+
+export interface DomainEvent {
+  id: string;
+  ts: string;
+  actor: Actor;
+  resource: string;
+  action: string;
+  target_id: string;
+  outcome: string;
+  details?: Record<string, unknown>;
+}
+
 /** One line item in the Evidence Manifest — a piece of proof that work happened. */
 export interface EvidenceItem {
   type: EvidenceType;
@@ -46,48 +70,60 @@ export interface EvidenceItem {
   warn?: boolean;
   /** Optional resolvable location (URI, deep link, storage path). */
   href?: string;
+  /** Stable source reference for ledger display. */
+  sourceRef: string;
+  /** Short content hash or manifest hash. */
+  hash: string;
+  /** ISO capture time from the event/evidence source. */
+  capturedAt: string;
+  /** Trust ladder value from ADR-0005. */
+  provenance: EvidenceProvenance;
 }
 
 /** Per-run record. The dashboard shows the latest run; history is a list of these. */
 export interface Run {
-  id: string;                 // "run_8f2a91c"
+  id: string; // "run_8f2a91c"
   state: RunState;
-  startedAt: string;          // ISO 8601
-  finishedAt?: string;        // ISO 8601 (absent if running/failed-timeout)
-  durationLabel: string;      // "4.2s" | "—"
-  exitCode?: number;          // 0 | 124 | …
-  errorType?: string;         // "UpstreamTimeout" (failed runs only)
-  summary: string;            // one-paragraph plain-language outcome
+  startedAt: string; // ISO 8601
+  finishedAt?: string; // ISO 8601 (absent if running/failed-timeout)
+  durationLabel: string; // "4.2s" | "—"
+  exitCode?: number; // 0 | 124 | …
+  errorType?: string; // "UpstreamTimeout" (failed runs only)
+  summary: string; // one-paragraph plain-language outcome
   donePolicy: DoneCondition[];
   evidence: EvidenceItem[];
+  /** Actor that attempted or performed the run. */
+  actor: Actor;
+  /** ADR-0006-shaped event backing the run state shown in demo UI. */
+  provenanceEvent: DomainEvent;
   /** CLI command a user can run to re-verify this run from source. */
-  readbackCommand: string;    // "mycron verify run_8f2a91c --evidence"
-  costLabel?: string;         // "$0.04" | "—"
+  readbackCommand: string; // "mycron verify run_8f2a91c --evidence"
+  costLabel?: string; // "$0.04" | "—"
 }
 
 /** The agent + runtime a Cronlet delegates to. */
 export interface AgentBinding {
-  agent: string;              // "FinAgent"
-  runtime: string;            // "Hermes Cloud" | "Local runner" | "K8s CronJob" | …
+  agent: string; // "FinAgent"
+  runtime: string; // "Hermes Cloud" | "Local runner" | "K8s CronJob" | …
 }
 
-/** A Cronlet: a delegated, verifiable recurring agent routine. */
+/** A Cronlet: a delegated, verifiable recurring agent operation. */
 export interface Cronlet {
   id: string;
   name: string;
   /** Icon key resolved by the host's icon set (see ICON_KEYS in design tokens). */
   icon: string;
-  /** Plain-language description of what the routine should accomplish. */
+  /** Plain-language description of what the Cronlet should accomplish. */
   intent: string;
   binding: AgentBinding;
 
   // ---- schedule ----
-  scheduleLabel: string;      // "Every weekday · 09:00"
-  cron: string;               // "0 9 * * 1-5"
-  timezone: string;           // IANA tz, e.g. "Asia/Seoul"
-  nextRunLabel: string;       // "Tomorrow · 09:00 KST" | "Overdue · expected 9 days ago"
-  lastRunLabel: string;       // "Today · 09:01 KST"
-  lastSuccessLabel?: string;  // shown in triage for failed/stale
+  scheduleLabel: string; // "Every weekday · 09:00"
+  cron: string; // "0 9 * * 1-5"
+  timezone: string; // IANA tz, e.g. "Asia/Seoul"
+  nextRunLabel: string; // "Tomorrow · 09:00 KST" | "Overdue · expected 9 days ago"
+  lastRunLabel: string; // "Today · 09:01 KST"
+  lastSuccessLabel?: string; // shown in triage for failed/stale
 
   // ---- rolled-up health ----
   /** Current resolved state (mirrors latestRun.state; denormalized for list views). */
@@ -101,9 +137,13 @@ export interface Cronlet {
 
   /** Most recent run with full proof detail. */
   latestRun: Run;
+  /** ADR-0006-shaped provenance events for the Control Surface. */
+  createdEvent: DomainEvent;
+  lastEditedEvent: DomainEvent;
+  approvalEvent?: DomainEvent;
 }
 
-/** A captured, not-yet-formalized request in the Routine Inbox. */
+/** A captured, not-yet-formalized request in the Inbox. */
 export interface InboxRequest {
   id: string;
   /** Raw user/agent phrasing, e.g. "every morning check if my staging deploy is healthy". */
@@ -116,22 +156,22 @@ export interface InboxRequest {
 
 /** Weekly Review roll-up. All values are facts, never vanity metrics. */
 export interface WeeklyReview {
-  rangeLabel: string;         // "Jun 2 – Jun 8"
+  rangeLabel: string; // "Jun 2 – Jun 8"
   verifiedRuns: number;
   totalRuns: number;
   previousVerifiedRuns: number;
   failed: number;
   stale: number;
   unverified: number;
-  costLabel: string;          // "$0.41"
+  costLabel: string; // "$0.41"
   corrections: UserCorrection[];
   suggestions: ImprovementSuggestion[];
 }
 
 export interface UserCorrection {
   id: string;
-  title: string;              // "Confirmed Portfolio Brief output"
-  detail: string;             // "Tue · marked goal satisfied"
+  title: string; // "Confirmed Portfolio Brief output"
+  detail: string; // "Tue · marked goal satisfied"
   state: RunState;
 }
 
@@ -149,7 +189,7 @@ export interface ImprovementSuggestion {
   cronletId?: string;
 }
 
-// ---- Account / workspace surface ----
+// ---- Account surface ----
 export interface AccountProfile {
   id: string;
   name: string;
@@ -162,7 +202,7 @@ export interface ComputeBudget {
   usedLabel: string;
   limitLabel: string;
   usedFraction: number;
-  routines: number;
+  cronlets: number;
   runsPerWeek: number;
   renewsLabel: string;
 }
@@ -174,14 +214,14 @@ export interface AlertPreference {
   enabled: boolean;
 }
 
-// ---- Builder draft (create/edit flow) ----
+// ---- Builder staged input (create/edit flow) ----
 export interface DonePolicyDraft {
-  ran: boolean;        // required: process completes cleanly
-  sources: boolean;    // all required sources reached
-  output: boolean;     // output artifact generated
-  evidence: boolean;   // evidence captured & linked
-  goal: boolean;       // user goal confirmed (read-back)
-  noDrift: boolean;    // no silent schedule drift
+  ran: boolean; // required: process completes cleanly
+  sources: boolean; // all required sources reached
+  output: boolean; // output artifact generated
+  evidence: boolean; // evidence captured & linked
+  goal: boolean; // user goal confirmed (read-back)
+  noDrift: boolean; // no silent schedule drift
 }
 
 export interface CronletDraft {
@@ -191,7 +231,7 @@ export interface CronletDraft {
   cron: string;
   timezone: string;
   agent: string;
-  deliverTo: string;          // "MyCron Inbox + Telegram"
+  deliverTo: string; // "MyCron Inbox + Telegram"
   donePolicy: DonePolicyDraft;
   /** Derived from donePolicy; not user-set directly. */
   requiredEvidence: EvidenceType[];

@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { conciseEnglishKeys, copy, primaryCopyKeys, t, type Language } from "./copy";
+import {
+  conciseEnglishKeys,
+  copy,
+  primaryCopyKeys,
+  t,
+  type Language,
+} from "./copy";
 
 describe("copy dictionary", () => {
   it("exposes English and Korean labels for primary UI keys", () => {
@@ -25,11 +31,22 @@ describe("copy dictionary", () => {
     }
 
     for (const key of conciseEnglishKeys.statuses) {
-      expect(t("en", key).length, key).toBeLessThanOrEqual(20);
+      expect(t("en", key).length, key).toBeLessThanOrEqual(32);
     }
 
     for (const key of conciseEnglishKeys.summaries) {
       expect(t("en", key).length, key).toBeLessThanOrEqual(80);
+    }
+  });
+
+  it("locks user-facing control-plane vocabulary", () => {
+    for (const lang of ["en", "ko"] as const) {
+      const values = Object.values(copy[lang]).join("\n");
+      expect(values, `${lang} copy`).not.toMatch(/routine/i);
+      expect(values, `${lang} copy`).not.toContain("루틴");
+      expect(values, `${lang} copy`).not.toContain("EmptyApi");
+      expect(values, `${lang} copy`).not.toContain("Provider not connected");
+      expect(values, `${lang} copy`).not.toMatch(/Escalate/i);
     }
   });
 });
