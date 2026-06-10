@@ -12,6 +12,9 @@ const valueFlags = new Set([
   "cronlet",
   "from",
   "target",
+  "domain",
+  "type",
+  "enabled",
 ]);
 
 const booleanFlags = new Set(["json", "dry-run", "confirm", "page-all", "help"]);

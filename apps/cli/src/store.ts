@@ -29,12 +29,13 @@ export type RunRecord = { id: string; cronlet_id: string; retry_of: string | nul
 export type AuditEvent = { id: string; resource: string; action: string; target_id: string };
 export type EvidenceRecord = { id: string; run_id: string; payload: Record<string, unknown>; provenance: "self_reported" | "runtime_attested" | "verified" | "rejected"; verification_state: "unverified" | "verified" | "rejected"; counts_toward_done: boolean };
 export type MygrationRecord = { id: string; source: string; candidates: Array<{ client_ref: string }> };
-export type StoreData = { cronlets: CronletRecord[]; approvals: ApprovalRecord[]; runs: RunRecord[]; evidence: EvidenceRecord[]; mygrations: MygrationRecord[]; audit: AuditEvent[] };
+export type MemoryRecord = { id: string; content: string | null; client_ref: string | null; domain: string | null; type: string | null; revision: number; supersedes_revision: number | null; content_purged: boolean; detached_from_future_context: boolean };
+export type StoreData = { cronlets: CronletRecord[]; approvals: ApprovalRecord[]; runs: RunRecord[]; evidence: EvidenceRecord[]; mygrations: MygrationRecord[]; memories: MemoryRecord[]; audit: AuditEvent[] };
 
 export type Store = {
   data: StoreData;
   save(): void;
-  nextId(prefix: "crn" | "apr" | "run" | "ev" | "mygr" | "aud"): string;
+  nextId(prefix: "crn" | "apr" | "run" | "ev" | "mygr" | "mem" | "aud"): string;
 };
 
 export function openStore(env: CliEnv): Store {
@@ -65,13 +66,13 @@ function storePath(env: CliEnv): string {
 
 function readData(path: string): StoreData {
   if (!existsSync(path)) {
-    return { cronlets: [], approvals: [], runs: [], evidence: [], mygrations: [], audit: [] };
+    return { cronlets: [], approvals: [], runs: [], evidence: [], mygrations: [], memories: [], audit: [] };
   }
   return normalizeData(JSON.parse(readFileSync(path, "utf8")) as Partial<StoreData>);
 }
 
 function normalizeData(data: Partial<StoreData>): StoreData {
-  return { cronlets: data.cronlets ?? [], approvals: data.approvals ?? [], runs: data.runs ?? [], evidence: data.evidence ?? [], mygrations: data.mygrations ?? [], audit: data.audit ?? [] };
+  return { cronlets: data.cronlets ?? [], approvals: data.approvals ?? [], runs: data.runs ?? [], evidence: data.evidence ?? [], mygrations: data.mygrations ?? [], memories: data.memories ?? [], audit: data.audit ?? [] };
 }
 
 function writeData(path: string, data: StoreData): void {
@@ -80,7 +81,7 @@ function writeData(path: string, data: StoreData): void {
 }
 
 function nextNumber(data: StoreData, prefix: string): number {
-  const ids = [...data.cronlets, ...data.approvals, ...data.runs, ...data.evidence, ...data.mygrations, ...data.audit].map(item => item.id);
+  const ids = [...data.cronlets, ...data.approvals, ...data.runs, ...data.evidence, ...data.mygrations, ...data.memories, ...data.audit].map(item => item.id);
   return ids.filter(id => id.startsWith(`${prefix}_`)).length + 1;
 }
 
