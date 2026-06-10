@@ -16,7 +16,8 @@ export type MyCronErrorCode =
   | "CLIENT_REF_CONFLICT"
   | "UNAUTHORIZED"
   | "NOT_FOUND"
-  | "NOT_IMPLEMENTED";
+  | "NOT_IMPLEMENTED"
+  | "WRONG_ARTIFACT_KIND";
 
 export function exitCodeForError(code: MyCronErrorCode): ExitCode {
   if (code === "CLIENT_REF_CONFLICT") {
@@ -28,7 +29,7 @@ export function exitCodeForError(code: MyCronErrorCode): ExitCode {
   if (code === "NOT_FOUND") {
     return exitCodes.notFound;
   }
-  if (code === "USAGE_ERROR" || code === "SCHEMA_VALIDATION_FAILED" || code === "MISSING_CONFIRM") {
+  if (code === "USAGE_ERROR" || code === "SCHEMA_VALIDATION_FAILED" || code === "MISSING_CONFIRM" || code === "WRONG_ARTIFACT_KIND") {
     return exitCodes.usage;
   }
   return exitCodes.runtime;

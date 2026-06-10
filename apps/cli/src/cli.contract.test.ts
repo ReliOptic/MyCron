@@ -1,3 +1,6 @@
+import { mkdtempSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { exitCodeForError } from "../../../packages/schema/src";
 import { runCli } from "./cli";
@@ -6,6 +9,20 @@ const baseEnv = {
   MYCRON_REQUEST_ID: "req_test_001",
   MYCRON_ACCOUNT_ID: "acct_test",
 };
+
+function routineFile(): string {
+  const dir = mkdtempSync(join(tmpdir(), "mycron-cli-contract-"));
+  const file = join(dir, "routine.mc");
+  writeFileSync(file, JSON.stringify({
+    schema: "mycron/v0",
+    kind: "Cronlet",
+    client_ref: "agent:contract",
+    name: "Contract check",
+    action_type: "email.send",
+    args: { to: "ops@example.com", subject: "Check", body: "Done" },
+  }));
+  return file;
+}
 
 describe("MyCron CLI contract v0", () => {
   it("emits the standard status JSON envelope", () => {
@@ -73,16 +90,17 @@ describe("MyCron CLI contract v0", () => {
     });
   });
 
-  it("separates confirmed_write from external_execution_approved in mutation stubs", () => {
-    const result = runCli(["cronlet", "create", "--file", "routine.mc", "--confirm", "--json"], baseEnv);
-    expect(result.exitCode).toBe(1);
+  it("separates confirmed_write from external_execution_approved in mutations", () => {
+    const result = runCli(["cronlet", "create", "--file", routineFile(), "--confirm", "--json"], {
+      ...baseEnv,
+      MYCRON_HOME: mkdtempSync(join(tmpdir(), "mycron-cli-contract-home-")),
+    });
+    expect(result.exitCode).toBe(0);
     expect(JSON.parse(result.stdout)).toMatchObject({
-      status: "error",
-      error: { code: "NOT_IMPLEMENTED" },
+      status: "ok",
       result: {
-        outcome: "not_implemented",
+        outcome: "created",
         resource: "cronlet",
-        verb: "create",
         confirmed_write: true,
         external_execution_approved: false,
       },
@@ -90,14 +108,13 @@ describe("MyCron CLI contract v0", () => {
   });
 
   it("returns dry-run as a successful outcome with exit 0", () => {
-    const result = runCli(["cronlet", "create", "--file", "routine.mc", "--dry-run", "--json"], baseEnv);
+    const result = runCli(["cronlet", "create", "--file", routineFile(), "--dry-run", "--json"], baseEnv);
     expect(result.exitCode).toBe(0);
     expect(JSON.parse(result.stdout)).toMatchObject({
       status: "ok",
       result: {
         outcome: "dry_run",
         resource: "cronlet",
-        verb: "create",
         confirmed_write: false,
         external_execution_approved: false,
       },
