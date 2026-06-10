@@ -1,4 +1,5 @@
 import { exitCodes } from "../../../packages/schema/src";
+import { accountCommand } from "./account-command";
 import { approvalCommand } from "./approval-command";
 import { commandFor, errorEnvelope, okEnvelope } from "./envelopes";
 import { cronletCommand } from "./cronlet-command";
@@ -47,6 +48,9 @@ export function executeJson(parsed: ParsedCommand, env: CliEnv): CliResult {
   }
   if (parsed.resource === "memory") {
     return memoryCommand(parsed, env, command);
+  }
+  if (parsed.resource === "account") {
+    return accountCommand(parsed, env, command);
   }
   if (!parsed.resource || !knownResources.has(parsed.resource)) {
     return jsonError(command, env, "USAGE_ERROR", "Unknown MyCron resource.", "mycron --help", exitCodes.usage);
