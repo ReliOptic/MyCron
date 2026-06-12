@@ -81,9 +81,16 @@ function writeData(path: string, data: StoreData): void {
   writeFileSync(path, `${JSON.stringify(data, null, 2)}\n`);
 }
 
+// Allocates max existing suffix + 1, not record count + 1: a count-based id
+// collides as soon as the sequence has a gap (crashed write, manual edit of
+// the user-owned store.json, or a future record-removing feature).
 function nextNumber(data: StoreData, prefix: string): number {
-  const ids = [...data.cronlets, ...data.approvals, ...data.runs, ...data.evidence, ...data.mygrations, ...data.memories, ...data.audit].map(item => item.id);
-  return ids.filter(id => id.startsWith(`${prefix}_`)).length + 1;
+  const suffixes = [...data.cronlets, ...data.approvals, ...data.runs, ...data.evidence, ...data.mygrations, ...data.memories, ...data.audit]
+    .map(item => item.id)
+    .filter(id => id.startsWith(`${prefix}_`))
+    .map(id => Number.parseInt(id.slice(prefix.length + 1), 10))
+    .filter(suffix => Number.isFinite(suffix));
+  return suffixes.length === 0 ? 1 : Math.max(...suffixes) + 1;
 }
 
 function sortValue(value: unknown): unknown {
