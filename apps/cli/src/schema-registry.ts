@@ -54,6 +54,7 @@ const actionSchemas: Record<string, ContractSchema> = {
 };
 
 const fileSchemas: Record<string, ContractSchema> = {
+  // Mirrors the canonical zod artifact schemas in packages/schema/src/artifact.ts; update both together.
   "pack.mc": {
     id: "pack.mc",
     required: ["schema", "kind", "client_ref"],
