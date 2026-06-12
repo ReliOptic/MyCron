@@ -174,6 +174,25 @@ Rules this foundation enforces (do not break them when wiring a backend):
 
 Validate the contract with `npm run typecheck` (`tsc --noEmit`).
 
+## Hosted account spine
+
+Supabase is optional in local development. If either value is absent, the Vite app keeps the
+existing `EmptyApi` behavior: honest empty states and failing writes.
+
+```bash
+cp .env.example .env.local
+# fill these from the Supabase project dashboard
+VITE_SUPABASE_URL=
+VITE_SUPABASE_ANON_KEY=
+```
+
+With both values present, Google sign-in is available on the Account tab. A signed-in session
+selects the read-only Supabase API path for account-scoped Cronlet reads. Mutations remain out
+of scope for this slice and still fail explicitly.
+
+Apply `supabase/migrations/0001_init.sql` to create `accounts` and `cronlets` with owner-only
+SELECT RLS and no client INSERT/UPDATE/DELETE policies.
+
 ## Repository status
 
 Seed: domain model (`CONTEXT.md`), architecture decisions (`docs/adr/0001~0003`), MVP
