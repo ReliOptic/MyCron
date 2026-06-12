@@ -15,6 +15,7 @@ export type MyCronErrorCode =
   | "MISSING_CONFIRM"
   | "CLIENT_REF_CONFLICT"
   | "UNAUTHORIZED"
+  | "APPROVAL_ACTOR_INVALID"
   | "NOT_FOUND"
   | "NOT_IMPLEMENTED"
   | "WRONG_ARTIFACT_KIND"
@@ -24,7 +25,7 @@ export function exitCodeForError(code: MyCronErrorCode): ExitCode {
   if (code === "CLIENT_REF_CONFLICT" || code === "INVALID_TRANSITION") {
     return exitCodes.conflict;
   }
-  if (code === "UNAUTHORIZED") {
+  if (code === "UNAUTHORIZED" || code === "APPROVAL_ACTOR_INVALID") {
     return exitCodes.auth;
   }
   if (code === "NOT_FOUND") {

@@ -27,7 +27,7 @@ Resource-scoped (gws / gcloud / kubectl style), never flat verbs.
 ```bash
 mycron cronlet create --file routine.mc --confirm --json
 mycron run evidence list --run run_001 --json
-mycron approval approve apr_001 --confirm --json
+mycron approval approve apr_001 --actor user --confirm --json
 ```
 
 ## 2. Artifact files: `.mc` and `.my` (kind-discriminated)
@@ -173,8 +173,8 @@ mycron run evidence add  --run run_001 --file evidence.json --json
 ```bash
 mycron approval list    --json
 mycron approval get     apr_001 --json
-mycron approval approve apr_001 --confirm --json     # --confirm REQUIRED
-mycron approval reject  apr_001 --reason "..." --json  # no --confirm
+mycron approval approve apr_001 --actor user --confirm --json    # --confirm + user actor REQUIRED
+mycron approval reject  apr_001 --actor user --reason "..." --json  # no --confirm; user actor REQUIRED
 ```
 
 - `approve` is the highest-risk mutation (authorizes external execution/delivery/spend). It
@@ -182,6 +182,12 @@ mycron approval reject  apr_001 --reason "..." --json  # no --confirm
   Envelope: `external_execution_approved: true`, `confirmed_write: true`, `outcome: approved`.
 - `reject` is the safe direction → frictionless, no `--confirm`. Envelope:
   `external_execution_approved: false`, `confirmed_write: true`, `outcome: rejected`.
+- **ADR-0007 actor invariant.** `approve`/`reject` are valid only for a **user** Actor. The
+  CLI default actor is `host_agent`, so a user must claim `--actor user` explicitly
+  (`--actor` accepts `user`/`host_agent`; `system` is runtime-reserved). A non-user attempt
+  returns `APPROVAL_ACTOR_INVALID` (exit 4) and the denied attempt is recorded in the Audit
+  Log with the claimed actor and `outcome: denied`. Until backend auth exists the actor is
+  self-declared; the invariant and error boundary are locked in now (ADR-0007).
 
 ### 3.6 `memory` (personal context; forgettable, never proof)
 

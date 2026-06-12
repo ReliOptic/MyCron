@@ -1,7 +1,8 @@
 import { exitCodes } from "../../../packages/schema/src";
+import { resolveActor } from "./actor";
 import { artifactSchema, previewArtifact } from "./artifact";
 import { errorEnvelope, okEnvelope } from "./envelopes";
-import { openStore, type MemoryRecord, type Store } from "./store";
+import { appendAudit, openStore, type MemoryRecord, type Store } from "./store";
 
 type MemoryItemInput = { content?: string; client_ref?: string; domain?: string; type?: string };
 import type { CliEnv, CliResult, ParsedCommand } from "./types";
@@ -22,7 +23,7 @@ function addMemory(parsed: ParsedCommand, env: CliEnv, command: string): CliResu
   const store = openStore(env);
   const memory = buildMemory(store.nextId("mem"), artifact);
   store.data.memories.push(memory);
-  audit(store, "add", memory.id);
+  audit(store, parsed, env, "add", memory.id, "created");
   store.save();
   return jsonOk(okEnvelope(command, env, result("created", memory), `mycron memory get ${memory.id} --json`));
 }
@@ -52,7 +53,7 @@ function updateMemory(parsed: ParsedCommand, env: CliEnv, command: string): CliR
   memory.type = artifact.type ?? memory.type;
   memory.revision += 1;
   memory.supersedes_revision = previous;
-  audit(store, "update", memory.id);
+  audit(store, parsed, env, "update", memory.id, "updated");
   store.save();
   return jsonOk(okEnvelope(command, env, { ...result("updated", memory), revision: memory.revision, supersedes_revision: previous }, `mycron memory get ${memory.id} --json`));
 }
@@ -65,7 +66,7 @@ function forgetMemory(parsed: ParsedCommand, env: CliEnv, command: string): CliR
   memory.content = null;
   memory.content_purged = true;
   memory.detached_from_future_context = true;
-  audit(store, "forget", memory.id);
+  audit(store, parsed, env, "forget", memory.id, "forgotten");
   store.save();
   return jsonOk(okEnvelope(command, env, { outcome: "forgotten", resource: "memory", id: memory.id, content_purged: true, tombstone_retained: true, detached_from_future_context: true, affected_cronlets: [] }, null));
 }
@@ -96,8 +97,8 @@ function wrongKind(command: string, env: CliEnv): CliResult {
   return jsonError(command, env, "WRONG_ARTIFACT_KIND", "memory add accepts kind: MemoryItem only.", "mycron mygration inspect <migration> --json", exitCodes.usage);
 }
 
-function audit(store: Store, action: string, targetId: string): void {
-  store.data.audit.push({ id: store.nextId("aud"), resource: "memory", action, target_id: targetId });
+function audit(store: Store, parsed: ParsedCommand, env: CliEnv, action: string, targetId: string, outcome: string): void {
+  appendAudit(store, { resource: "memory", action, target_id: targetId, actor: resolveActor(parsed, env), outcome });
 }
 
 function stringFlag(value: string | boolean | undefined): string | undefined {

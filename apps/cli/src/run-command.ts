@@ -1,7 +1,8 @@
 import { readFileSync } from "node:fs";
 import { exitCodes } from "../../../packages/schema/src";
+import { resolveActor } from "./actor";
 import { errorEnvelope, okEnvelope } from "./envelopes";
-import { openStore, type EvidenceRecord, type RunRecord, type Store } from "./store";
+import { appendAudit, openStore, type EvidenceRecord, type RunRecord, type Store } from "./store";
 import type { CliEnv, CliResult, ParsedCommand } from "./types";
 
 export function runCommand(parsed: ParsedCommand, env: CliEnv, command: string): CliResult {
@@ -44,7 +45,7 @@ function verifyRun(parsed: ParsedCommand, env: CliEnv, command: string): CliResu
   const trusted = evidence.filter(item => item.provenance === "runtime_attested").length;
   run.run_state = trusted > 0 ? "verified" : "unverified";
   const changed = previous !== run.run_state;
-  if (changed) audit(store, "run", "verify", run.id);
+  if (changed) audit(store, parsed, env, "run", "verify", run.id, "verified");
   store.save();
   return jsonOk(okEnvelope(command, env, { outcome: "verified", resource: "run", previous_run_state: previous, run_state: run.run_state, run_state_changed: changed, override: false, manual_marking: false, evaluated_counts: { runtime_attested: trusted, self_reported_ignored: evidence.length - trusted } }, null));
 }
@@ -55,7 +56,7 @@ function retryRun(parsed: ParsedCommand, env: CliEnv, command: string): CliResul
   if (!original) return notFound(command, env, "Run");
   const run = cloneRun(store.nextId("run"), original, "original_run");
   store.data.runs.push(run);
-  audit(store, "run", "retry", run.id);
+  audit(store, parsed, env, "run", "retry", run.id, "created");
   store.save();
   return jsonOk(okEnvelope(command, env, { outcome: "created", resource: "run", run }, `mycron run get ${run.id} --json`));
 }
@@ -65,7 +66,7 @@ function escalateRun(parsed: ParsedCommand, env: CliEnv, command: string): CliRe
   const run = findRun(store, parsed.id);
   if (!run) return notFound(command, env, "Run");
   const reason = stringFlag(parsed.flags.reason) ?? null;
-  audit(store, "run", "escalate", run.id);
+  audit(store, parsed, env, "run", "escalate", run.id, "escalated");
   store.save();
   return jsonOk(okEnvelope(command, env, { outcome: "escalated", resource: "run", id: run.id, reason }, `mycron run get ${run.id} --json`));
 }
@@ -95,7 +96,7 @@ function addEvidence(parsed: ParsedCommand, env: CliEnv, command: string): CliRe
   }
   store.data.evidence.push(evidence);
   run.evidence_ids.push(evidence.id);
-  audit(store, "evidence", "add", evidence.id);
+  audit(store, parsed, env, "evidence", "add", evidence.id, "created");
   store.save();
   return jsonOk(okEnvelope(command, env, evidenceResult("created", evidence), `mycron run verify ${run.id} --json`));
 }
@@ -116,8 +117,8 @@ function findRun(store: Store, id: string | null): RunRecord | undefined {
   return store.data.runs.find(item => item.id === id);
 }
 
-function audit(store: Store, resource: string, action: string, targetId: string): void {
-  store.data.audit.push({ id: store.nextId("aud"), resource, action, target_id: targetId });
+function audit(store: Store, parsed: ParsedCommand, env: CliEnv, resource: string, action: string, targetId: string, outcome: string): void {
+  appendAudit(store, { resource, action, target_id: targetId, actor: resolveActor(parsed, env), outcome });
 }
 
 function stringFlag(value: string | boolean | undefined): string | undefined {
