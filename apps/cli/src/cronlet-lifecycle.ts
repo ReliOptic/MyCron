@@ -1,7 +1,8 @@
 import { exitCodes } from "../../../packages/schema/src";
+import { resolveActor } from "./actor";
 import { previewArtifact } from "./artifact";
 import { errorEnvelope, okEnvelope } from "./envelopes";
-import { openStore, stableHash, type CronletRecord, type Store } from "./store";
+import { appendAudit, openStore, stableHash, type CronletRecord, type Store } from "./store";
 import type { CliEnv, CliResult, ParsedCommand } from "./types";
 
 export function cronletLifecycle(parsed: ParsedCommand, env: CliEnv, command: string): CliResult {
@@ -30,7 +31,7 @@ function transitionCronlet(parsed: ParsedCommand, env: CliEnv, command: string):
     return jsonError(command, env, "INVALID_TRANSITION", "Invalid cronlet state transition.", `mycron cronlet get ${cronlet.id} --json`, exitCodes.conflict);
   }
   cronlet.state = nextState(parsed.verb);
-  audit(store, "cronlet", parsed.verb ?? "transition", cronlet.id);
+  audit(store, parsed, env, "cronlet", parsed.verb ?? "transition", cronlet.id, transitionOutcome(parsed.verb));
   store.save();
   return jsonOk(okEnvelope(command, env, transitionResult(parsed.verb, cronlet), `mycron cronlet get ${cronlet.id} --json`));
 }
@@ -60,7 +61,7 @@ function updateCronlet(parsed: ParsedCommand, env: CliEnv, command: string): Cli
   cronlet.spec = updated;
   cronlet.name = String(updated.name ?? cronlet.name);
   cronlet.spec_hash = stableHash(updated);
-  audit(store, "cronlet", "update", cronlet.id);
+  audit(store, parsed, env, "cronlet", "update", cronlet.id, "updated");
   store.save();
   return jsonOk(okEnvelope(command, env, result, `mycron cronlet get ${cronlet.id} --json`));
 }
@@ -73,7 +74,7 @@ function runNow(parsed: ParsedCommand, env: CliEnv, command: string): CliResult 
   }
   const run = { id: store.nextId("run"), cronlet_id: cronlet.id, retry_of: null, context_source: "current_cronlet_spec", run_state: "unverified", done_policy: cronlet.spec.done_policy ?? null, evidence_ids: [] };
   store.data.runs.push(run);
-  audit(store, "run", "run-now", run.id);
+  audit(store, parsed, env, "run", "run-now", run.id, "created");
   store.save();
   return jsonOk(okEnvelope(command, env, { outcome: "created", resource: "run", run, external_execution_approved: false }, `mycron run get ${run.id} --json`));
 }
@@ -110,8 +111,8 @@ function transitionOutcome(verb: string | null): string {
   return "cancelled";
 }
 
-function audit(store: Store, resource: string, action: string, targetId: string): void {
-  store.data.audit.push({ id: store.nextId("aud"), resource, action, target_id: targetId });
+function audit(store: Store, parsed: ParsedCommand, env: CliEnv, resource: string, action: string, targetId: string, outcome: string): void {
+  appendAudit(store, { resource, action, target_id: targetId, actor: resolveActor(parsed, env), outcome });
 }
 
 function notFound(command: string, env: CliEnv): CliResult {

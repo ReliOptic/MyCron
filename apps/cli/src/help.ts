@@ -16,7 +16,7 @@ export function topHelp(): string {
     "MyCron CLI",
     "Usage: mycron <resource> <verb> [id] [flags]",
     "Resources: " + resources.join(", "),
-    "Global flags: --json --file --input-json --dry-run --confirm --fields --limit --cursor --page-all --idempotency-key --reason",
+    "Global flags: --json --file --input-json --dry-run --confirm --actor --fields --limit --cursor --page-all --idempotency-key --reason",
   ].join("\n");
 }
 

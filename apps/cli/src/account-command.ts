@@ -1,6 +1,7 @@
 import { exitCodes } from "../../../packages/schema/src";
+import { resolveActor } from "./actor";
 import { errorEnvelope, okEnvelope } from "./envelopes";
-import { openStore } from "./store";
+import { appendAudit, openStore } from "./store";
 import type { CliEnv, CliResult, ParsedCommand } from "./types";
 
 export function accountCommand(parsed: ParsedCommand, env: CliEnv, command: string): CliResult {
@@ -36,7 +37,7 @@ function alertsSet(parsed: ParsedCommand, env: CliEnv, command: string): CliResu
   if (!key || enabled === null) return jsonError(command, env, "USAGE_ERROR", "alerts set requires <key> --enabled true|false.", "mycron account alerts set failure --enabled true --json", exitCodes.usage);
   const store = openStore(env);
   store.data.account.alerts[key] = enabled;
-  store.data.audit.push({ id: store.nextId("aud"), resource: "account", action: "alerts.set", target_id: key });
+  appendAudit(store, { resource: "account", action: "alerts.set", target_id: key, actor: resolveActor(parsed, env), outcome: "updated" });
   store.save();
   return jsonOk(okEnvelope(command, env, { outcome: "updated", resource: "account", key, enabled, alerts: store.data.account.alerts }, "mycron account alerts list --json"));
 }

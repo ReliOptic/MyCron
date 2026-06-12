@@ -15,7 +15,10 @@ const valueFlags = new Set([
   "domain",
   "type",
   "enabled",
+  "actor",
 ]);
+
+const claimableActorKinds = new Set(["user", "host_agent"]);
 
 const booleanFlags = new Set(["json", "dry-run", "confirm", "page-all", "help"]);
 
@@ -47,6 +50,9 @@ export function parseArgs(args: string[], env: CliEnv): ParsedCommand | Error {
     const value = inlineValue ?? args[index + 1];
     if (!value || value.startsWith("--")) {
       return new Error(`Missing value for --${name}.`);
+    }
+    if (name === "actor" && !claimableActorKinds.has(value)) {
+      return new Error("--actor must be 'user' or 'host_agent'; 'system' is runtime-reserved (ADR-0007).");
     }
     flags[name] = value;
     if (inlineValue === undefined) {

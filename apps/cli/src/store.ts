@@ -26,7 +26,9 @@ export type ApprovalRecord = {
 };
 
 export type RunRecord = { id: string; cronlet_id: string; retry_of: string | null; context_source: string; run_state: string; done_policy: unknown; evidence_ids: string[] };
-export type AuditEvent = { id: string; resource: string; action: string; target_id: string };
+export type ActorKind = "user" | "host_agent" | "system";
+export type AuditActor = { kind: ActorKind; id: string | null };
+export type AuditEvent = { id: string; ts: string; actor: AuditActor; resource: string; action: string; target_id: string; outcome: string };
 export type EvidenceRecord = { id: string; run_id: string; payload: Record<string, unknown>; provenance: "self_reported" | "runtime_attested" | "verified" | "rejected"; verification_state: "unverified" | "verified" | "rejected"; counts_toward_done: boolean };
 export type MygrationRecord = { id: string; source: string; candidates: Array<{ client_ref: string }> };
 export type MemoryRecord = { id: string; content: string | null; client_ref: string | null; domain: string | null; type: string | null; revision: number; supersedes_revision: number | null; content_purged: boolean; detached_from_future_context: boolean };
@@ -47,6 +49,11 @@ export function openStore(env: CliEnv): Store {
     save: () => writeData(path, data),
     nextId: prefix => `${prefix}_${String(nextNumber(data, prefix)).padStart(3, "0")}`,
   };
+}
+
+/** Appends one Audit Log event with the ADR-0006 ledger fields (ts, actor, outcome). */
+export function appendAudit(store: Store, entry: Omit<AuditEvent, "id" | "ts">): void {
+  store.data.audit.push({ id: store.nextId("aud"), ts: new Date().toISOString(), ...entry });
 }
 
 export function stableHash(value: unknown): string {

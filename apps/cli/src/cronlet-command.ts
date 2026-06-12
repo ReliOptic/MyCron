@@ -1,8 +1,9 @@
 import { exitCodes } from "../../../packages/schema/src";
+import { resolveActor } from "./actor";
 import { previewArtifact } from "./artifact";
 import { errorEnvelope, okEnvelope } from "./envelopes";
 import { cronletLifecycle } from "./cronlet-lifecycle";
-import { openStore, projectFields, stableHash, type CronletRecord } from "./store";
+import { appendAudit, openStore, projectFields, stableHash, type CronletRecord } from "./store";
 import type { CliEnv, CliResult, ParsedCommand } from "./types";
 
 export function cronletCommand(parsed: ParsedCommand, env: CliEnv, command: string): CliResult {
@@ -54,7 +55,7 @@ function persistCronlet(parsed: ParsedCommand, env: CliEnv, command: string, art
   if (cronlet.approval_id) {
     store.data.approvals.push({ id: cronlet.approval_id, cronlet_id: cronlet.id, state: "pending", reason: null });
   }
-  store.data.audit.push({ id: store.nextId("aud"), resource: "cronlet", action: "create", target_id: cronlet.id });
+  appendAudit(store, { resource: "cronlet", action: "create", target_id: cronlet.id, actor: resolveActor(parsed, env), outcome: "created" });
   store.save();
   return jsonOk(okEnvelope(command, env, createResult("created", artifact, cronlet, true), `mycron cronlet get ${cronlet.id} --json`));
 }

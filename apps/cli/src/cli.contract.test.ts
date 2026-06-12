@@ -137,6 +137,7 @@ describe("MyCron CLI contract v0", () => {
     expect(exitCodeForError("MISSING_CONFIRM")).toBe(2);
     expect(exitCodeForError("CLIENT_REF_CONFLICT")).toBe(3);
     expect(exitCodeForError("UNAUTHORIZED")).toBe(4);
+    expect(exitCodeForError("APPROVAL_ACTOR_INVALID")).toBe(4);
     expect(exitCodeForError("NOT_FOUND")).toBe(5);
   });
 

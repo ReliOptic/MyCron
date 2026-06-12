@@ -1,7 +1,8 @@
 import { exitCodes } from "../../../packages/schema/src";
+import { resolveActor } from "./actor";
 import { previewArtifact } from "./artifact";
 import { errorEnvelope, okEnvelope } from "./envelopes";
-import { openStore, type MygrationRecord, type Store } from "./store";
+import { appendAudit, openStore, type MygrationRecord, type Store } from "./store";
 import type { CliEnv, CliResult, ParsedCommand } from "./types";
 
 export function mygrationCommand(parsed: ParsedCommand, env: CliEnv, command: string): CliResult {
@@ -26,7 +27,7 @@ function importMygration(parsed: ParsedCommand, env: CliEnv, command: string): C
   const store = openStore(env);
   const record = { id: store.nextId("mygr"), ...candidate };
   store.data.mygrations.push(record);
-  audit(store, "import", record.id);
+  audit(store, parsed, env, "import", record.id, "staged");
   store.save();
   return jsonOk(okEnvelope(command, env, importResult("staged", record, record.id), `mycron mygration inspect ${record.id} --json`));
 }
@@ -55,7 +56,7 @@ function rebindMygration(parsed: ParsedCommand, env: CliEnv, command: string): C
   if (parsed.flags["dry-run"] === true) return jsonOk(okEnvelope(command, env, result, `mycron mygration rebind ${record.id} --target ${target} --confirm --json`));
   if (parsed.flags.confirm !== true) return jsonError(command, env, "MISSING_CONFIRM", "rebind requires --dry-run or --confirm.", `mycron mygration rebind ${record.id} --target ${target} --dry-run --json`, exitCodes.usage);
   if (cronlet) cronlet.spec = { ...cronlet.spec, runtime_binding: { target } };
-  audit(store, "rebind", record.id);
+  audit(store, parsed, env, "rebind", record.id, "rebound");
   store.save();
   return jsonOk(okEnvelope(command, env, result, cronlet ? `mycron cronlet get ${cronlet.id} --json` : null));
 }
@@ -92,8 +93,8 @@ function findMygration(store: Store, id: string | null): MygrationRecord | undef
   return store.data.mygrations.find(item => item.id === id);
 }
 
-function audit(store: Store, action: string, targetId: string): void {
-  store.data.audit.push({ id: store.nextId("aud"), resource: "mygration", action, target_id: targetId });
+function audit(store: Store, parsed: ParsedCommand, env: CliEnv, action: string, targetId: string, outcome: string): void {
+  appendAudit(store, { resource: "mygration", action, target_id: targetId, actor: resolveActor(parsed, env), outcome });
 }
 
 function stringFlag(value: string | boolean | undefined): string | undefined {
