@@ -9,15 +9,17 @@ import type { AlertPreference } from "@contract/types/mycron";
 import { useAppCopy, useNotice } from "../shell/context";
 import { Bell } from "../shell/icons";
 import { PageHead, Skeleton } from "../shell/primitives";
+import { useAuth } from "../backend/auth";
 
 export function AccountSurface() {
   const { tc } = useAppCopy();
+  const auth = useAuth();
   const { data: account, loading: aLoading } = useAccount();
   const { data: budget } = useComputeBudget();
   const { data: alerts, reload } = useAlertPreferences();
   const actions = useCronletActions();
   const { showNotice } = useNotice();
-  if (aLoading) return <Skeleton title="Loading account" />;
+  if (aLoading || auth.loading) return <Skeleton title="Loading account" />;
   if (!account)
     return (
       <>
@@ -27,9 +29,23 @@ export function AccountSurface() {
           sub={tc("account.summary")}
         />
         <EmptyState
-          title={tc("account.empty")}
-          hint={tc("account.emptyHint")}
+          title={tc(auth.configured ? "account.signedOut" : "account.empty")}
+          hint={tc(auth.configured ? "account.signedOutHint" : "account.emptyHint")}
         />
+        {auth.configured && (
+          <div className="list" style={{ maxWidth: 720 }}>
+            <button
+              className="primary-btn"
+              onClick={() => {
+                auth.signIn().catch((error: unknown) =>
+                  showNotice(tc("notice.authTitle"), errorMessage(error)),
+                );
+              }}
+            >
+              {tc("action.signInGoogle")}
+            </button>
+          </div>
+        )}
       </>
     );
   return (
@@ -65,14 +81,27 @@ export function AccountSurface() {
             <div className="muted">{account.email}</div>
           </div>
           <span className="status verified">{account.plan}</span>
-          <button
-            className="ghost-btn"
-            onClick={() =>
-              showNotice(tc("notice.profileTitle"), tc("notice.profileDetail"))
-            }
-          >
-            {tc("action.editProfile")}
-          </button>
+          {auth.configured ? (
+            <button
+              className="ghost-btn"
+              onClick={() => {
+                auth.signOut().catch((error: unknown) =>
+                  showNotice(tc("notice.authTitle"), errorMessage(error)),
+                );
+              }}
+            >
+              {tc("action.signOut")}
+            </button>
+          ) : (
+            <button
+              className="ghost-btn"
+              onClick={() =>
+                showNotice(tc("notice.profileTitle"), tc("notice.profileDetail"))
+              }
+            >
+              {tc("action.editProfile")}
+            </button>
+          )}
         </div>
         {budget && (
           <div className="card card-pad">
@@ -128,6 +157,10 @@ export function AccountSurface() {
       </div>
     </>
   );
+}
+
+function errorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : "Authentication failed.";
 }
 function AlertRow({
   alert,
