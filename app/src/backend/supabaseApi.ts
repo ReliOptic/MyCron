@@ -18,8 +18,9 @@ export type SupabaseSession = {
 type DbError = { message: string };
 type SelectResult<T> = PromiseLike<{ data: T | null; error: DbError | null }>;
 type CronletQuery = {
+  eq(column: string, value: string): CronletQuery;
   order(column: string, opts: { ascending: boolean }): SelectResult<CronletRow[]>;
-  eq(column: string, value: string): { maybeSingle(): SelectResult<CronletRow> };
+  maybeSingle(): SelectResult<CronletRow>;
 };
 export type SupabaseReadClient = {
   from(table: string): { select(columns: string): CronletQuery };
@@ -35,6 +36,7 @@ export class SupabaseApi implements MyCronApi {
     const { data, error } = await readClient(this.client)
       .from("cronlets")
       .select("*")
+      .eq("account_id", this.session.user.id)
       .order("created_at", { ascending: false });
     if (error) throw new Error(error.message);
     return (data ?? []).map(mapCronletRow);
@@ -44,6 +46,7 @@ export class SupabaseApi implements MyCronApi {
     const { data, error } = await readClient(this.client)
       .from("cronlets")
       .select("*")
+      .eq("account_id", this.session.user.id)
       .eq("id", id)
       .maybeSingle();
     if (error) throw new Error(error.message);

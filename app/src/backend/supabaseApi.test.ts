@@ -50,3 +50,32 @@ describe("SupabaseApi", () => {
     await expect(api.setAlertPreference("failure", true)).rejects.toBeInstanceOf(NotImplementedError);
   });
 });
+
+describe("SupabaseApi account scoping", () => {
+  it("filters list and detail reads by the signed-in account", async () => {
+    const eqCalls: Array<[string, string]> = [];
+    const query = {
+      eq(column: string, value: string) {
+        eqCalls.push([column, value]);
+        return query;
+      },
+      order: async () => ({ data: [], error: null }),
+      maybeSingle: async () => ({ data: row, error: null }),
+    };
+    const client = {
+      from: () => ({
+        select: () => query,
+      }),
+    };
+    const api = new SupabaseApi(client, { user: { id: "acct_123" } });
+
+    await api.listCronlets();
+    await api.getCronlet("crn_001");
+
+    expect(eqCalls).toEqual([
+      ["account_id", "acct_123"],
+      ["account_id", "acct_123"],
+      ["id", "crn_001"],
+    ]);
+  });
+});
