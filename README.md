@@ -140,11 +140,11 @@ Approval Gate). CLI is an agent-first CRUD client for the Cronlet store plus con
 
 ---
 
-## UI foundation (design handoff)
+## UI foundation and app shell
 
-The React + TypeScript **UI contract** lives in `src/` and is **typecheck-only** — no
-application stack (Vite/Next), bundler, or CSS pipeline is committed yet, so the repo stays
-framework-neutral until the product implementation stack is explicitly chosen.
+The React + TypeScript **UI contract** lives in `src/`: domain types, API
+interfaces, hooks, primitives, and mock-free components. The runnable Vite app
+lives in `app/` and injects a `MyCronApi` implementation at bootstrap.
 
 ```
 src/
@@ -158,7 +158,7 @@ docs/design/mycron-handoff/
   design_reference/       # desktop + mobile HTML/JSX prototypes — VISUAL REFERENCE ONLY
 ```
 
-Rules this foundation enforces (do not break them when wiring a backend):
+Rules this foundation enforces:
 
 - **`docs/design/mycron-handoff/design_reference/` is visual reference only.** It is never
   imported by `src/`. Its `shared/data.jsx` is mock data **for the prototype's legibility —
@@ -169,38 +169,116 @@ Rules this foundation enforces (do not break them when wiring a backend):
 - **`EmptyApi` is the honest default.** Reads resolve to empty data (UI renders loading →
   empty states with zero presets); **writes throw `NotImplementedError`** — a control plane
   must never report a silent success for an action it did not perform.
-- **A future backend implements `MyCronApi`** and is injected at bootstrap via
-  `<ApiProvider api={realApi}>`, replacing `EmptyApi` endpoint by endpoint.
+- **Backends implement `MyCronApi`** and are injected at bootstrap via
+  `<ApiProvider api={realApi}>`, replacing `EmptyApi` endpoint by endpoint. Demo
+  data is confined to `SeededDemoApi` behind `?demo=1`.
 
-Validate the contract with `npm run typecheck` (`tsc --noEmit`).
+Validate with `npm run typecheck`, `npm test`, and `npm run build`.
+
+## Roadmap checkpoint (2026-06-13)
+
+This is the current handoff state for the next agent or maintainer. Treat this
+section as the repo-level "where are we?" marker until the first-real-user track
+is merged.
+
+### What is already real
+
+- **Preview web app:** Vite SPA on Vercel with demo mode (`?demo=1`) and honest
+  empty states when no backend is configured.
+- **Agent-first CLI MVP:** resource-scoped CLI commands exist for schema
+  introspection, artifact validation/preview, Cronlet lifecycle, approval, run,
+  evidence, mygration, memory, and account scope.
+- **Canonical `.mc` schema:** PR #66 / issue #60 promoted the Cronlet / Pack /
+  Memory artifact schemas into `packages/schema`; the CLI imports that canonical
+  schema instead of owning a private copy.
+- **Design/contract surface:** `src/` remains mock-free and API-driven; the app
+  chooses between `SeededDemoApi`, `EmptyApi`, and a backend implementation at
+  bootstrap.
+
+### Active roadmap tracks
+
+1. **Trust surface hardening**
+   - PR #58: enforce the ADR-0007 user-actor invariant on approval
+     approve/reject.
+   - PR #59: allocate store ids from max suffix, not record count.
+   - Issues #61-#65: approval/audit API contract, Run tri-state
+     process/data/goal status, audit list, shared Evidence definition, and the
+     P1/P2/P3 denial-gate walkthrough.
+2. **First real user E2E**
+   - Epic #76 is the entry point.
+   - Ordered issues: #67 -> #68 -> #69 -> #70 -> #72, with #71 consuming #61
+     and #68, and #73 depending on the account/auth/onboarding pieces.
+   - Draft PR #74 implements #67's hosted account spine in code, but it is not
+     ready to merge as a live slice until a MyCron-owned Supabase project is
+     active and configured.
+
+### Hosted storage boundary
+
+Do **not** point MyCron at the Supabase project
+`ybvgltbfrllxenvfkynr`. That project is **cronbell** and is used by Campsite.
+It was briefly tested as a MyCron reuse target, then reverted after the Campsite
+dependency was discovered.
+
+Current Supabase/Vercel truth:
+
+- `ybvgltbfrllxenvfkynr` is named `cronbell` again and must be treated as
+  Campsite-owned.
+- `dobzpikndbmnmugivnxf` is reserved/named `mycron`, but is currently
+  paused/inactive.
+- MyCron's Vercel project currently has **no** `VITE_SUPABASE_URL` or
+  `VITE_SUPABASE_ANON_KEY` env vars on Production, Preview, or Development.
+  This is intentional so hosted MyCron cannot accidentally read/write Campsite
+  storage.
+- Activating a separate MyCron Supabase project is blocked by the current
+  Supabase free active-project limit. Resolve by freeing a slot, upgrading, or
+  otherwise unpausing/activating the reserved `mycron` project.
+
+### Next safe sequence
+
+1. Activate or create a **MyCron-owned** Supabase project; do not reuse
+   `cronbell`.
+2. Link this repo to that MyCron project and apply
+   `supabase/migrations/0001_init.sql`.
+3. Add `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` to the MyCron Vercel
+   project only after the target project is confirmed MyCron-owned.
+4. Configure Google OAuth redirects for the hosted app.
+5. Re-run #67 validation: `npm run typecheck && npm test && npm run build`, then
+   smoke the no-env path and the signed-in read path.
+6. Only then make PR #74 merge-ready and continue to #68 server-side mutation
+   kernel.
 
 ## Hosted account spine
 
-Supabase is optional in local development. If either value is absent, the Vite app keeps the
-existing `EmptyApi` behavior: honest empty states and failing writes.
+Supabase is optional in local development. If either value is absent, the Vite
+app keeps the existing `EmptyApi` behavior: honest empty states and failing
+writes.
 
 ```bash
 cp .env.example .env.local
-# fill these from the Supabase project dashboard
+# fill these from the MyCron-owned Supabase project dashboard
 VITE_SUPABASE_URL=
 VITE_SUPABASE_ANON_KEY=
 ```
 
-With both values present, Google sign-in is available on the Account tab. A signed-in session
-selects the read-only Supabase API path for account-scoped Cronlet reads. Mutations remain out
-of scope for this slice and still fail explicitly.
+With both values present, Google sign-in is available on the Account tab. A
+signed-in session selects the read-only Supabase API path for account-scoped
+Cronlet reads. Mutations remain out of scope for this slice and still fail
+explicitly.
 
-Apply `supabase/migrations/0001_init.sql` to create `accounts` and `cronlets` with owner-only
-SELECT RLS and no client INSERT/UPDATE/DELETE policies.
+Apply `supabase/migrations/0001_init.sql` to create `accounts` and `cronlets`
+with owner-only SELECT RLS and no client INSERT/UPDATE/DELETE policies.
 
 ## Repository status
 
-Seed: domain model (`CONTEXT.md`), architecture decisions (`docs/adr/0001~0003`), MVP
-design (`docs/design-control-plane-mvp.md`), CTO implementation standard
-(`docs/product-implementation-spec.md`), and the typecheck-only UI contract (`src/`) with its
-visual design handoff (`docs/design/mycron-handoff/`). No production runtime, backend, or PWA
-exists yet — scheduling, agent execution, persistence, auth, and integrations are
-intentionally out of scope for this pass.
+Main has moved past the original docs-only seed: the repo now contains the Vite
+preview app, the mock-free UI contract, the agent-first CLI MVP, ADRs for the
+kernel/ledger/approval actor model, and the canonical artifact schema package.
+
+Still not real yet: hosted writes, server-side invariant enforcement, CLI remote
+mode, scheduler/executor ownership, verified evidence provenance, Google OAuth
+configuration, and the first-user onboarding path. The product is currently at
+the boundary between "local agent-first prototype" and "hosted account-scoped
+control plane."
 
 ## License
 
