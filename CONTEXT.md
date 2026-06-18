@@ -61,6 +61,32 @@ host agent가 자기 Account의 cronlet 스토어를 CRUD하고 승인 큐를 �
 사용자 제품이 아니라 agent 진입구이며 통제 진입구다.
 _Avoid_: tool, terminal app
 
+**Harness**:
+agent work 주변의 운영 계층. memory, I/O, scheduling, orchestration, approval, evidence,
+verification, audit을 포함한다. MyCron은 model provider나 agent brain이 아니라 scheduled
+agent work의 사용자 소유 multi-agent operations harness다. 여러 외부 agent가 만든 장기
+작업이 한 Account로 모이는 interface가 MyCron의 본질이다.
+_Avoid_: model, brain, marketplace
+
+**Agent**:
+의도를 해석하고 tools를 쓰며, 다른 agent와 협업하거나 memory/skills로 개선될 수 있는
+reasoning worker. MyCron에서는 대체로 외부 host agent이며, MyCron은 agent brain을 소유하지
+않고 origin/execution metadata와 통제 기록을 보존한다. Agent를 MyCron 안에 만드는 것이
+아니라, 사용자가 관리하는 많은 외부 agent들의 scheduled work를 한 곳에서 운영하기 위해
+식별·관측한다.
+_Avoid_: internal bot, model
+
+**Runtime**:
+agent work가 실제로 실행되는 환경·host·body. cloud agent host, local runner, coding
+workstation, GitHub Actions, K8s CronJob, 미래 physical/robotic execution environment가 될 수
+있다. 현재는 독립 관리 기능이 아니라 Cronlet metadata와 binding 개념이다.
+_Avoid_: page, dashboard, MyCron server
+
+**RuntimeBinding**:
+Cronlet의 future run이 어느 runtime/executor에서 실행될지를 가리키는 현재 연결. rebind는
+RuntimeBinding을 바꾸지만 immutable origin anchor인 client_ref는 바꾸지 않는다.
+_Avoid_: client_ref, origin namespace
+
 **Approval Gate**:
 external Action Type이 실행되기 전에 넘어야 하는 사용자 승인 관문. Policy가 승인 필요로
 판정한 행동은 실행되지 않고 Approval Queue에 들어간다.
@@ -103,6 +129,7 @@ _Avoid_: action(Action Type과 혼동), interaction
 - **MyCron CLI**가 **Scheduled Action**을 **Account**로 스코프된 서버에 등록한다
 - 등록된 **Scheduled Action**은 하나의 **Cronlet**으로 저장된다
 - 한 **Cronlet**은 하나의 **Action Type**(internal/external)을 가진다
+- 한 **Cronlet**은 future run을 위한 현재 **RuntimeBinding**을 가질 수 있다
 - **Policy**가 external **Action Type**에 **Approval Gate**를 적용한다 → **Approval Queue**
 - 사용자가 **Control Surface**에서 **Approval Queue**를 승인/거부한다
 - 승인된 행동은 실행되고, 실행·거부는 **Audit Log**에 불변 기록된다
