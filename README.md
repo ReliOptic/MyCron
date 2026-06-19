@@ -30,6 +30,7 @@ Read these before asking Claude Code to scaffold implementation:
 
 - [`docs/product-implementation-spec.md`](docs/product-implementation-spec.md): latest CTO-level build direction for moving this docs-only seed repo toward a real MyCron runtime, CLI, and control surface.
 - [`docs/strategy.md`](docs/strategy.md): ShareIdee portfolio/gateway strategy and current MyCron/Campsite/BALTAM boundary.
+- [`docs/n8n-runtime-connector-strategy.md`](docs/n8n-runtime-connector-strategy.md): proposal for treating n8n as a Cronlet runtime target while MyCron owns done policy, approval, evidence, and audit.
 - [`docs/adr/0003-agent-first-cli.md`](docs/adr/0003-agent-first-cli.md): current agent-first CLI ADR from the pivoted control-plane direction.
 - [`docs/adr/0004-cli-command-grammar.md`](docs/adr/0004-cli-command-grammar.md) + [`docs/mycron-cli-grammar.md`](docs/mycron-cli-grammar.md): canonical CLI command grammar (resource-scoped, `--json` output-only, `client_ref` idempotency, `--confirm` vs Approval Gate).
 - [`docs/mygration-memory-portability.md`](docs/mygration-memory-portability.md): Mygration as migration of Cronlets plus agent memory, including the proposed `.my` memory migration artifact.
