@@ -221,6 +221,120 @@ The durable truth should include:
 
 This supports onboarding, external contractors, compliance review, and agent handoff.
 
+### Truth approval loop
+
+MyCron should treat reusable business knowledge as an approval-gated outcome, not as a side effect of an agent run. A completed Cronlet can emit a truth candidate into Campsite.
+
+```text
+Agent/n8n workflow produces candidate knowledge
+→ MyCron verifies run evidence and done policy
+→ Campsite presents TruthCandidateCard
+→ user approves, edits, rejects, verifies, or marks temporary
+→ approved truth becomes citable context for future agents
+```
+
+Required user actions:
+
+```text
+Approve as truth
+Edit then approve
+Reject
+Ask agent to verify
+Mark as temporary
+```
+
+The approved record should preserve:
+
+- statement
+- source Cronlet/run/workflow
+- evidence refs
+- approval actor and timestamp
+- owner
+- stale-after policy
+- conflict links
+- downstream agent answers that cited it
+
+### Truth Graph maintenance
+
+The truth graph is an operational provenance graph for agents. It should answer:
+
+```text
+Which approved standard did this agent rely on?
+Who approved that standard, and when?
+Is the standard stale?
+Does another approved standard conflict with it?
+Which workflow/run produced the evidence?
+```
+
+Initial object families:
+
+- customer / ICP
+- product
+- pricing
+- marketing claim
+- CS / FAQ
+- competitor
+- meeting decision
+- experiment
+- market research
+- workflow policy
+
+MyCron's role is not to render a pretty graph. MyCron schedules, verifies, and audits the recurring work that keeps the graph trustworthy.
+
+### Staleness Cronlets
+
+Staleness Cronlets are recurring jobs that maintain company truth. They are not reminders; they are SSOT maintenance contracts.
+
+Examples:
+
+```text
+Weekly: check whether ICP criteria are still current.
+Monthly: refresh pricing policy and competitor comparison.
+Weekly: roll ad creative performance into marketing standards.
+Daily: collect CS FAQ change candidates.
+Weekly: extract decision candidates from meeting notes.
+```
+
+A Staleness Cronlet's done policy should require explicit evidence and one of these outputs:
+
+- `truth_candidate`: a proposed new/updated standard
+- `truth_confirmed`: evidence that the existing standard remains current
+- `truth_conflict`: a detected conflict between standards
+- `truth_stale`: no sufficient evidence; human review needed
+- `no_change_with_evidence`: no update needed, with supporting evidence
+
+Example `.mc` fragment:
+
+```yaml
+id: crn_icp_staleness_weekly
+name: Weekly ICP truth freshness check
+schedule:
+  cron: "0 9 * * 1"
+  timezone: Asia/Seoul
+runtime:
+  type: n8n
+  instance_id: founder-selfhost
+  workflow_id: icp-research-refresh
+done_policy:
+  requires:
+    - evidence_refs_min: 3
+    - output_one_of:
+        - truth_candidate
+        - truth_confirmed
+        - truth_conflict
+        - truth_stale
+truth:
+  object_family: customer_icp
+  stale_after_days: 30
+  approval_required: true
+  actions:
+    - approve_as_truth
+    - edit_then_approve
+    - reject
+    - ask_agent_to_verify
+    - mark_as_temporary
+```
+
 ## Self-host + cloud dual motion
 
 n8n's self-host community shows a useful GTM pattern:
